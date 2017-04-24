@@ -1,0 +1,52 @@
+{
+  "SECS_BEFORE_LOST" : "1",
+  "FEED_DELAY_SECS" : "12",
+  "FEED_DURATION_SECS" : "218",
+  "TOTAL_SECS" : "245",
+  "NUM_FRAMES_FOR_BACKGROUND" : "500",
+  "EDGE_BUFFER_PIXELS" : "75",
+  "CROP_X1" : "0",
+  "CROP_X2" : "1280",
+  "CROP_Y1" : "0",
+  "CROP_Y2" : "720",
+  "TANK_LENGTH_CM" : "40.64",
+  "TANK_WIDTH_CM" : "21.59",
+  "MIRROR_LENGTH_CM" : "5.08",
+  "MIRROR_ZONE_WIDTH_CM" : "3",
+  "TRACKING_WINDOW_LEN_PIXELS" : "100",
+  "TARGET_ZONE_CM" : "10",
+  "HIGH_STIMULUS_LETTER" : "I",
+  "LOW_STIMULUS_LETTER" : "O",
+  "FREEZE_TIME_MIN_SECS" : "3",
+  "FREEZE_CIRCLE_DIAMETER_PIXELS" : "40",
+  "Isadora" : {
+    "TANK_UPPER_LEFT_X" : "85",
+    "TANK_UPPER_LEFT_Y" : "95",
+    "TANK_LOWER_LEFT_X" : "92",
+    "TANK_LOWER_LEFT_Y" : "622",
+    "TANK_UPPER_RIGHT_X" : "1149",
+    "TANK_UPPER_RIGHT_Y" : "85",
+    "TANK_LOWER_RIGHT_X" : "1175",
+    "TANK_LOWER_RIGHT_Y" : "611"
+  },
+  "Imelda" : {
+    "TANK_UPPER_LEFT_X" : "190",
+    "TANK_UPPER_LEFT_Y" : "128",
+    "TANK_LOWER_LEFT_X" : "194",
+    "TANK_LOWER_LEFT_Y" : "555",
+    "TANK_UPPER_RIGHT_X" : "1074",
+    "TANK_UPPER_RIGHT_Y" : "126",
+    "TANK_LOWER_RIGHT_X" : "1077",
+    "TANK_LOWER_RIGHT_Y" : "554"
+  },
+  "Ivanka" : {
+    "TANK_UPPER_LEFT_X" : "229",
+    "TANK_UPPER_LEFT_Y" : "126",
+    "TANK_LOWER_LEFT_X" : "231",
+    "TANK_LOWER_LEFT_Y" : "561",
+    "TANK_UPPER_RIGHT_X" : "1126",
+    "TANK_UPPER_RIGHT_Y" : "116",
+    "TANK_LOWER_RIGHT_X" : "1137",
+    "TANK_LOWER_RIGHT_Y" : "517"
+  }
+}

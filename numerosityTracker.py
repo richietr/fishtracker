@@ -11,21 +11,25 @@ import types
 import argparse
 
 def parseJSON():
-	with open(os.path.join('config.json'), 'r') as jsonFile:
-		jsonString = jsonFile.read()
-		paramsDict = json.loads(jsonString)
-		for k,v in paramsDict.iteritems():
-			if type(v) == types.UnicodeType:    
-				path_elems = v.split('\\')
-				newPath = os.path.join(*path_elems)
-				paramsDict[k] = newPath
-	config_dict = paramsDict
-	
-	# check error conditions           
-	if config_dict is None:
-		print 'Error> Config dictionary is None, problem parsing config.json'
-	
-	return config_dict
+	if os.path.exists('config.json'):
+		with open(os.path.join('config.json'), 'r') as jsonFile:
+			jsonString = jsonFile.read()
+			paramsDict = json.loads(jsonString)
+			for k,v in paramsDict.iteritems():
+				if type(v) == types.UnicodeType:
+					path_elems = v.split('\\')
+					newPath = os.path.join(*path_elems)
+					paramsDict[k] = newPath
+		config_dict = paramsDict
+
+		# check error conditions
+		if config_dict is None:
+			print 'Error> Config dictionary is None, problem parsing config.json'
+
+		return config_dict
+	else:
+		print 'Error> No config.json, will use hard-coded defaults'
+		return None
 
 def true_distance(a, b):
 	d = math.sqrt((float(a[0]) - b[0])**2 + (float(a[1]) - b[1])**2)
@@ -51,7 +55,7 @@ def apply_special_mask(frame, corner_x1, corner_x2, corner_y1, corner_y2, target
 	mask[corner_y1:corner_y2,corner_x1:corner_x2] = frame[corner_y1:corner_y2,corner_x1:corner_x2]
 	mask[corner_y2:corner_y3,target_x1:target_x2] = frame[corner_y2:corner_y3,target_x1:target_x2]
 	mask[corner_y3:corner_y4,corner_x1:corner_x2] = frame[corner_y3:corner_y4,corner_x1:corner_x2]
-	
+
 	return mask
 
 # blurs a frame and crops based on boundaries
@@ -138,7 +142,7 @@ def returnLargeContour(frame,totalVideoPixels, unified):
 
 		potential_tracks = []
 		for area in area_list:
-			if area < 2000.0 and area > 400.0 and max(h,w) < 100 and max(h,w) > 10:
+			if area < 2000.0 and area > 200.0 and max(h,w) < 100 and max(h,w) > 10:
 				idx = area_list.index(area)
 				potential_tracks.append(contours[idx])
 
@@ -148,7 +152,7 @@ def returnLargeContour(frame,totalVideoPixels, unified):
 			cant_decide += 1
 			return None
 		else:
-		
+
 			largestCon = area_list.index(max(area_list))
 
 			m = cv2.moments(contours[largestCon])
@@ -181,7 +185,7 @@ def getBackgroundImage(vid,numFrames,length):
 
 	# set a counter
 	i = 0
-	vid.set(1, 200) # TODO: what is this doing?
+	#vid.set(1, 200) # TODO: what is this doing?
 	_,frame = vid.read()
 	frameCnt = 1
 
@@ -243,7 +247,7 @@ if __name__ == '__main__':
 	ap = argparse.ArgumentParser()
 	ap.add_argument("-i", "--path2video", help = "Path to video file including the filename", required=True)
 	ap.add_argument("-s", "--show_images", help="Whether or not show images (slows processing)",action="store_true")
-	args = vars(ap.parse_args())	
+	args = vars(ap.parse_args())
 
 	path = args["path2video"]
 	#path = 'gambusia_15_TBD_female_Imelda_1_1_0_0_0_both_B.mkv'
@@ -252,7 +256,7 @@ if __name__ == '__main__':
 		show_images = True
 	else:
 		show_images = False
-	
+
 	# Parse out filepath
 	path_strip = os.path.splitext(path)[0]
 	path_parts = path_strip.split('/')
@@ -273,7 +277,7 @@ if __name__ == '__main__':
 	fedside = filename_parts[10]
 	correctside = filename_parts[11]
 
-	# defaults	
+	# defaults
 	SECS_B4_LOST = 1
 	FEED_DELAY = 10+2 # secs
 	FEED_DURATION = 220-2 # secs
@@ -302,7 +306,7 @@ if __name__ == '__main__':
 	LOW_STIMULUS_LETTER = 'O'
 	FREEZE_TIME_MIN_SECS = 3 # freeze must be 3 secs
 	FREEZE_WINDOW_LEN = 40 # TODO: Use cm instead of pixels
-	
+
 	# Check if defaults overriden by config.json
 	config_json = parseJSON()
 	if config_json is not None:
@@ -349,7 +353,6 @@ if __name__ == '__main__':
 		if fishid in config_json:
 			tmp_dict = config_json[fishid]
 			if 'TANK_UPPER_LEFT_X' in tmp_dict:
-				print tmp_dict
 				TANK_UPPER_LEFT_X = int(tmp_dict['TANK_UPPER_LEFT_X'])
 			if 'TANK_UPPER_LEFT_Y' in tmp_dict:
 				TANK_UPPER_LEFT_Y = int(tmp_dict['TANK_UPPER_LEFT_Y'])
@@ -365,7 +368,7 @@ if __name__ == '__main__':
 				TANK_LOWER_RIGHT_X = int(tmp_dict['TANK_LOWER_RIGHT_X'])
 			if 'TANK_LOWER_RIGHT_Y' in tmp_dict:
 				TANK_LOWER_RIGHT_Y = int(tmp_dict['TANK_LOWER_RIGHT_Y'])
-	
+
 	# data to pull out
 	reinforced_latency = 0
 	non_reinforced_latency = 0
@@ -433,7 +436,7 @@ if __name__ == '__main__':
 	freeze_frame_cnt = 0
 	potential_freeze_frames = 0
 	freeze_time_secs = 0
-	
+
 	# tracker metrics
 	frames_b4_acq = 0
 	acquired = False
@@ -518,7 +521,7 @@ if __name__ == '__main__':
 	# target boxes
 	left_target_x = int(TANK_UPPER_LEFT_X + (TARGET_ZONE_CM * (1/pixel_cm)))
 	right_target_x = int(TANK_UPPER_RIGHT_X - (TARGET_ZONE_CM * (1/pixel_cm)))
-	
+
 	# target center point
 	left_target_center_x = ((left_target_x-TANK_LOWER_LEFT_X)/2) + TANK_LOWER_LEFT_X
 	target_center_y = ((TANK_LOWER_LEFT_Y-TANK_UPPER_LEFT_Y/2)) + TANK_UPPER_LEFT_Y
@@ -553,7 +556,7 @@ if __name__ == '__main__':
 
 	# get some info about the video
 	#length = int(cap.get(cv2.cv.CV_CAP_PROP_FRAME_COUNT))
-	length = 6000
+	length = 5000
 	print 'Number of frames: ' +  str(length)
 	vidWidth  = int(cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH))
 	print 'Width: ' +  str(vidWidth)
@@ -643,10 +646,10 @@ if __name__ == '__main__':
 				# distance between points in pixels times cm in a single pixel
 				activity_level += (true_distance(prev_center, center))*pixel_cm
 
-		if center is not None:			
+		if center is not None:
 
 			prev_center = center
-			
+
 			if not acquired:
 				acquired = True
 				dist_left = true_distance([left_target_center_x, target_center_y], center)
@@ -657,13 +660,13 @@ if __name__ == '__main__':
 					print 'Counting first ' + str(frames_b4_acq) + ' frames to the right target zone'
 					first_target_zone = 'right'
 					first_target_zone_entered = True
-				else:		
-					left_target_frame_cnt += frames_b4_acq	
-					left_target_entries = 1 #should this be counted	
+				else:
+					left_target_frame_cnt += frames_b4_acq
+					left_target_entries = 1 #should this be counted
 					print 'Counting first ' + str(frames_b4_acq) + ' frames to the left target zone'
 					first_target_zone = 'left'
 					first_target_zone_entered = True
-			
+
 			if not tracking:
 				tracking = True
 				print 'Target acquired... tracking...'
@@ -671,19 +674,19 @@ if __name__ == '__main__':
 				if acquired:
 					frames_since_last_track.append(frames_not_tracking)
 				frames_not_tracking = 0
-				
-			
+
+
 			#if counter > NUM_FRAMES_TO_SKIP:
 			# shrink search window
 			new_upper_bound = center[1] + TRACKING_WINDOW_LEN
 			new_lower_bound = center[1] - TRACKING_WINDOW_LEN
 			if center[0] - TRACKING_WINDOW_LEN < TANK_UPPER_LEFT_X + EDGE_BUFFER:
 				new_left_bound  = TANK_UPPER_LEFT_X + EDGE_BUFFER
-			else:				
+			else:
 				new_left_bound  = center[0] - TRACKING_WINDOW_LEN
 			if center[0] + TRACKING_WINDOW_LEN > TANK_UPPER_RIGHT_X - EDGE_BUFFER:
 				new_right_bound = TANK_UPPER_RIGHT_X - EDGE_BUFFER
-			else:				
+			else:
 				new_right_bound = center[0] + TRACKING_WINDOW_LEN
 			#print 'new_lower_bound=' + str(new_lower_bound)
 			#print 'new_upper_bound=' + str(new_upper_bound)
@@ -813,7 +816,7 @@ if __name__ == '__main__':
 			else:
 				if true_distance(freeze_start, center) < FREEZE_WINDOW_LEN:
 					freeze_frame_cnt += 1
-					
+
 					# if potential freeze frames is not 0 then fish wasn't being tracked
 					# but appears to have remained within freeze circle so add those
 					# frames to the freeze frame counter
@@ -868,22 +871,22 @@ if __name__ == '__main__':
 				if tracking:
 					print 'Lost track! Back to acquisition...'
 					times_lost_track += 1
-					
+
 					# draw red circle on prev
 					if prev_center is not None:
 						cv2.circle(frame,prev_center,4,[0,0,255],-1)
-				
+
 				new_upper_bound, new_left_bound, new_right_bound, new_lower_bound = CROP_Y2, CROP_X1, CROP_X2, CROP_Y1
-				
+
 				lost_track_frame_cnt += 1
-				
+
 				tracking = False
-			
+
 			frames_not_tracking += 1
-			
+
 			if not acquired:
 				frames_b4_acq += 1
-			
+
 			# assume fish is in same zone if not found
 			if in_left_target:
 				left_target_frame_cnt += 1
@@ -909,17 +912,17 @@ if __name__ == '__main__':
 				ul_corner_frame_cnt += 1
 			if in_ur_corner:
 				ur_corner_frame_cnt += 1
-				
+
 			if acquired:
 				potential_freeze_frames += 1
-			
+
 		# draw box around track window
 		cv2.rectangle(frame,(new_left_bound, new_lower_bound), (new_right_bound, new_upper_bound), (255,255,255),2)
-			
+
 		# draw green circle around freeze center
 		if freeze_start is not None:
 			cv2.circle(frame,freeze_start,FREEZE_WINDOW_LEN,[0,255,0],2)
-			
+
 		# draw green box around target zones
 		if in_left_target:
 			cv2.rectangle(frame,(0,0),(left_target_x,vidHeight),(0,255,0),2)
@@ -946,7 +949,7 @@ if __name__ == '__main__':
 
 		if in_lr_thigmo:
 			cv2.rectangle(frame,(thigmo_lr_x1,thigmo_lower_y),(thigmo_lr_x2,vidHeight),(0,0,255),2)
-				
+
 		# show frame
 		if show_images:
 			cv2.imshow('image',frame)
