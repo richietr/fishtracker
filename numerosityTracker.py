@@ -10,7 +10,7 @@ import json
 import types
 import argparse
 
-def parseJSON():
+def parse_json():
 	if os.path.exists('config.json'):
 		with open(os.path.join('config.json'), 'r') as jsonFile:
 			jsonString = jsonFile.read()
@@ -81,7 +81,7 @@ def find_if_close(cnt1,cnt2):
 			elif i==row1-1 and j==row2-1:
 				return False
 
-def mergeContours(frame):
+def merge_contours(frame):
 	contours,hier = cv2.findContours(thresh,cv2.RETR_EXTERNAL,2)
 
 	LENGTH = len(contours)
@@ -117,8 +117,8 @@ def mergeContours(frame):
 		return unified
 
 
-# returns centroid from largest contour from a binary image
-def returnLargeContour(frame,totalVideoPixels, unified):
+# returns center of fish
+def find_fish(frame,totalVideoPixels, unified):
 
 	global cant_decide
 
@@ -282,7 +282,7 @@ if __name__ == '__main__':
 	FEED_DELAY = 10+2 # secs
 	FEED_DURATION = 220-2 # secs
 	TOTAL_TIME = 245 # secs
-	NUM_FRAMES_FOR_BACKGROUND = 500
+	NUM_FRAMES_FOR_BACKGROUND = 1000
 	EDGE_BUFFER = 75 #pixels
 	CROP_X1 = 0
 	CROP_X2 = 1280
@@ -308,7 +308,7 @@ if __name__ == '__main__':
 	FREEZE_WINDOW_LEN = 40 # TODO: Use cm instead of pixels
 
 	# Check if defaults overriden by config.json
-	config_json = parseJSON()
+	config_json = parse_json()
 	if config_json is not None:
 		if 'FREEZE_CIRCLE_DIAMETER_PIXELS' in config_json:
 			FREEZE_WINDOW_LEN = int(config_json['FREEZE_CIRCLE_DIAMETER_PIXELS'])
@@ -512,7 +512,12 @@ if __name__ == '__main__':
 		rightside_high = False
 
 	# length of a pixel (assuming square)
-	pixel_cm = TANK_LENGTH_CM/(TANK_UPPER_RIGHT_X-TANK_UPPER_LEFT_X)
+	pixel_cm_len = TANK_LENGTH_CM/(TANK_UPPER_RIGHT_X-TANK_UPPER_LEFT_X)
+	#print pixel_cm_len
+	pixel_cm_wid = TANK_WIDTH_CM/(TANK_LOWER_LEFT_Y-TANK_UPPER_RIGHT_Y)
+	#print pixel_cm_wid
+	pixel_cm = (pixel_cm_len+pixel_cm_wid)/2
+	#print pixel_cm
 
 	# cropping window
 	upper_bound, left_bound, right_bound, lower_bound = CROP_Y2, CROP_X1, CROP_X2, CROP_Y1
@@ -555,8 +560,21 @@ if __name__ == '__main__':
 		print "ERROR> Could not open :",path
 
 	# get some info about the video
-	#length = int(cap.get(cv2.cv.CV_CAP_PROP_FRAME_COUNT))
-	length = 5000
+	length = int(cap.get(cv2.cv.CV_CAP_PROP_FRAME_COUNT))
+	if length < 0:		
+		# manually count how many frames, this will take a little time...
+		print 'Counting frames..'
+		length = 0
+		cap = cv2.VideoCapture(path)
+		if not cap.isOpened():
+			print "ERROR> Could not open :",path
+			sys.exit(1)
+		while(cap.isOpened()):
+			ret,frame = cap.read()	
+			if ret == False:
+				print "didn't read frame from video file"
+				break
+			length += 1
 	print 'Number of frames: ' +  str(length)
 	vidWidth  = int(cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH))
 	print 'Width: ' +  str(vidWidth)
@@ -572,11 +590,9 @@ if __name__ == '__main__':
 	NUM_FRAMES_TO_TRIM = (TOTAL_TIME-FEED_DURATION) * fps
 
 	# grab the 20th frame for drawing the rectangle
-	i = 0
-	while i < 20:
-		ret,frame = cap.read()
-		i += 1
-	print "grabbed first frame? " + str(ret)
+	cap = cv2.VideoCapture(path)
+	if not cap.isOpened():
+		print "ERROR> Could not open :",path
 
 	# calculate background image of tank for x frames
 	background = getBackgroundImage(cap,NUM_FRAMES_FOR_BACKGROUND,(length-NUM_FRAMES_TO_TRIM))
@@ -597,7 +613,6 @@ if __name__ == '__main__':
 
 	print '\n\nProcessing...\n'
 	while(cap.isOpened()):
-	#while(counter < (length-2000)):
 
 		#print "frame " + str(counter) + "\n\n"
 		if not counter % 100:
@@ -608,8 +623,9 @@ if __name__ == '__main__':
 
 		# skipping some frames at the beginning
 		if first_pass:
-			for i in range(0, int(fps)):
+			for i in range(0, int(3*fps)):
 				cap.read()
+				frames_not_tracking += 1 # should this be counted?
 		ret,frame = cap.read()
 
 		if ret == False:
@@ -623,9 +639,9 @@ if __name__ == '__main__':
 		difference = cv2.absdiff(bm, bm_initial)
 		if counter < (FEED_DELAY*fps) or counter > ((FEED_DELAY+FEED_DURATION)*fps):
 			#difference = apply_mask(difference, TANK_UPPER_LEFT_Y+EDGE_BUFFER, TANK_LOWER_LEFT_Y-EDGE_BUFFER, left_target_x, right_target_x)
-			difference = apply_special_mask(difference, TANK_UPPER_LEFT_X+EDGE_BUFFER, TANK_UPPER_RIGHT_X-EDGE_BUFFER, TANK_UPPER_LEFT_Y+EDGE_BUFFER, upper_mirror_y, left_target_x, right_target_x, lower_mirror_y, TANK_LOWER_LEFT_Y-EDGE_BUFFER)
+			difference = apply_special_mask(difference, TANK_UPPER_LEFT_X+EDGE_BUFFER, TANK_UPPER_RIGHT_X-EDGE_BUFFER, TANK_UPPER_LEFT_Y+25, upper_mirror_y, left_target_x, right_target_x, lower_mirror_y, TANK_LOWER_LEFT_Y-25)
 		elif not tracking:
-			difference = apply_mask(difference, TANK_UPPER_LEFT_Y+EDGE_BUFFER, TANK_LOWER_LEFT_Y-EDGE_BUFFER, TANK_UPPER_LEFT_X+EDGE_BUFFER, TANK_UPPER_RIGHT_X-EDGE_BUFFER)
+			difference = apply_mask(difference, TANK_UPPER_LEFT_Y+25, TANK_LOWER_LEFT_Y-25, TANK_UPPER_LEFT_X+EDGE_BUFFER, TANK_UPPER_RIGHT_X-EDGE_BUFFER)
 		else:
 			difference = apply_mask(difference, new_lower_bound, new_upper_bound, new_left_bound, new_right_bound)
 
@@ -635,9 +651,9 @@ if __name__ == '__main__':
 		if show_images:
 			cv2.imshow('thresh',thresh)
 
-		unified = mergeContours(frame)
+		unified = merge_contours(frame)
 		#unified = None
-		center = returnLargeContour(thresh, vidWidth*vidHeight, unified)
+		center = find_fish(thresh, vidWidth*vidHeight, unified)
 		#print "Center: " + str(center) + "\n"
 
 		# calc distance between current center and previous center
@@ -673,7 +689,6 @@ if __name__ == '__main__':
 				print 'Frames since last tracking: ' + str(frames_not_tracking)
 				if acquired:
 					frames_since_last_track.append(frames_not_tracking)
-				frames_not_tracking = 0
 
 
 			#if counter > NUM_FRAMES_TO_SKIP:
@@ -703,7 +718,7 @@ if __name__ == '__main__':
 
 			# check if fish is in left target
 			if center[0] < left_target_x:
-				left_target_frame_cnt += 1
+				left_target_frame_cnt += (frames_not_tracking + 1)
 				in_left_target = True
 				if not first_target_zone_entered:
 					first_target_zone = 'left'
@@ -713,7 +728,7 @@ if __name__ == '__main__':
 
 			# check if fish is in right target
 			if center[0] > right_target_x:
-				right_target_frame_cnt += 1
+				right_target_frame_cnt += (frames_not_tracking + 1)
 				in_right_target = True
 				if not first_target_zone_entered:
 					first_target_zone = 'right'
@@ -723,75 +738,75 @@ if __name__ == '__main__':
 
 			# check left target latency (if still applicable)
 			if left_target_entries == 0:
-				left_target_latency_frame_cnt += 1
+				left_target_latency_frame_cnt += (frames_not_tracking + 1)
 
 			# check right target latency (if still applicable)
 			if right_target_entries == 0:
-				right_target_latency_frame_cnt += 1
+				right_target_latency_frame_cnt += (frames_not_tracking + 1)
 
 			# check if in upper mirror zone
 			if center[0] > upper_mirror_x1 and center[0] < upper_mirror_x2 and center[1] < upper_mirror_y:
-				upper_mirror_frame_cnt += 1
+				upper_mirror_frame_cnt += (frames_not_tracking + 1)
 				in_upper_mirror = True
 			else:
 				in_upper_mirror = False
 
 			# check if in lower mirror zone
 			if center[0] > lower_mirror_x1 and center[0] < lower_mirror_x2 and center[1] > lower_mirror_y:
-				lower_mirror_frame_cnt += 1
+				lower_mirror_frame_cnt += (frames_not_tracking + 1)
 				in_lower_mirror = True
 			else:
 				in_lower_mirror = False
 
 			# check if in upper left thigmotaxis zone
 			if center[0] > thigmo_ul_x1 and center[0] < thigmo_ul_x2 and center[1] < thigmo_upper_y:
-				ul_thigmo_frame_cnt += 1
+				ul_thigmo_frame_cnt += (frames_not_tracking + 1)
 				in_ul_thigmo = True
 			else:
 				in_ul_thigmo = False
 
 			# check if in upper right thigmotaxis zone
 			if center[0] > thigmo_ur_x1 and center[0] < thigmo_ur_x2 and center[1] < thigmo_upper_y:
-				ur_thigmo_frame_cnt += 1
+				ur_thigmo_frame_cnt += (frames_not_tracking + 1)
 				in_ur_thigmo = True
 			else:
 				in_ur_thigmo = False
 
 			# check if in lower left thigmotaxis zone
 			if center[0] > thigmo_ll_x1 and center[0] < thigmo_ll_x2 and center[1] > thigmo_lower_y:
-				ll_thigmo_frame_cnt += 1
+				ll_thigmo_frame_cnt += (frames_not_tracking + 1)
 				in_ll_thigmo = True
 			else:
 				in_ll_thigmo = False
 
 			# check if in lower right thigmotaxis zone
 			if center[0] > thigmo_lr_x1 and center[0] < thigmo_lr_x2 and center[1] > thigmo_lower_y:
-				lr_thigmo_frame_cnt += 1
+				lr_thigmo_frame_cnt += (frames_not_tracking + 1)
 				in_lr_thigmo = True
 			else:
 				in_lr_thigmo = False
 
 			# check if fish is in corners (may use for thigmotaxis score)
 			if center[0] < thigmo_ul_x1 and center[1] < thigmo_upper_y:
-				ul_corner_frame_cnt += 1
+				ul_corner_frame_cnt += (frames_not_tracking + 1)
 				in_ul_corner = True
 			else:
 				in_ul_corner = False
 
 			if center[0] < thigmo_ll_x1 and center[1] > thigmo_lower_y:
-				ll_corner_frame_cnt += 1
+				ll_corner_frame_cnt += (frames_not_tracking + 1)
 				in_ll_corner = True
 			else:
 				in_ll_corner = False
 
 			if center[0] > thigmo_ur_x2 and center[1] < thigmo_upper_y:
-				ur_corner_frame_cnt += 1
+				ur_corner_frame_cnt += (frames_not_tracking + 1)
 				in_ur_corner = True
 			else:
 				in_ur_corner = False
 
 			if center[0] > thigmo_lr_x2 and center[1] > thigmo_lower_y:
-				lr_corner_frame_cnt += 1
+				lr_corner_frame_cnt += (frames_not_tracking + 1)
 				in_lr_corner = True
 			else:
 				in_lr_corner = False
@@ -864,6 +879,8 @@ if __name__ == '__main__':
 
 			# draw red circle on largest
 			cv2.circle(frame,center,4,[0,0,255],-1)
+			
+			frames_not_tracking = 0
 
 		else:
 			if frames_not_tracking > SECS_B4_LOST*fps:
@@ -886,32 +903,6 @@ if __name__ == '__main__':
 
 			if not acquired:
 				frames_b4_acq += 1
-
-			# assume fish is in same zone if not found
-			if in_left_target:
-				left_target_frame_cnt += 1
-			if in_right_target:
-				right_target_frame_cnt += 1
-			if in_ll_thigmo:
-				ll_thigmo_frame_cnt += 1
-			if in_lr_thigmo:
-				lr_thigmo_frame_cnt += 1
-			if in_ul_thigmo:
-				ul_thigmo_frame_cnt += 1
-			if in_ur_thigmo:
-				ur_thigmo_frame_cnt += 1
-			if in_lower_mirror:
-				lower_mirror_frame_cnt += 1
-			if in_upper_mirror:
-				upper_mirror_frame_cnt += 1
-			if in_ll_corner:
-				ll_corner_frame_cnt += 1
-			if in_lr_corner:
-				lr_corner_frame_cnt += 1
-			if in_ul_corner:
-				ul_corner_frame_cnt += 1
-			if in_ur_corner:
-				ur_corner_frame_cnt += 1
 
 			if acquired:
 				potential_freeze_frames += 1
@@ -950,6 +941,10 @@ if __name__ == '__main__':
 		if in_lr_thigmo:
 			cv2.rectangle(frame,(thigmo_lr_x1,thigmo_lower_y),(thigmo_lr_x2,vidHeight),(0,0,255),2)
 
+		if acquired and not (in_left_target or in_right_target or in_ll_corner or in_lr_corner or in_ul_corner or \
+							in_ur_corner or in_ll_thigmo or in_lr_thigmo or in_ul_thigmo or in_ur_thigmo or \
+							in_lower_mirror or in_upper_mirror):
+			cv2.rectangle(frame,(thigmo_ul_x1, thigmo_upper_y),(thigmo_lr_x2,thigmo_lower_y),(255,255,0),2)
 		# show frame
 		if show_images:
 			cv2.imshow('image',frame)
@@ -1086,7 +1081,10 @@ if __name__ == '__main__':
 			                'Time.Thigmo.Secs', 'Prop.Thigmo.%', \
 			                'Prop.Center.%', 'Activity.Level.CM', \
 			                'Time.Corners.Secs', 'Prop.Corners.%', \
-			                'First.Target.Zone'))
+			                'First.Target.Zone', 'UL.Corner.Secs', \
+			                'LL.Corner.Secs', 'UR.Corner.Secs', 'LR.Corner.Secs',
+			                'UL.Thigmo.Secs', 'LL.Thigmo.Secs', 'UR.Thigmo.Secs',
+			                'LR.Thigmo.Secs'))
 
 	# Open csv file in append mode
 	with open(csv_filename, 'a') as f:
@@ -1103,7 +1101,11 @@ if __name__ == '__main__':
 						 '{:.2f}'.format(thigmotaxis_score), '{:.2f}'.format(prop_time_thigmo), \
 						 '{:.2f}'.format(prop_time_center), '{:.2f}'.format(activity_level), \
 						 '{:.2f}'.format(time_in_corners), '{:.2f}'.format(prop_corners),
-						 first_target_zone))
+						 first_target_zone, '{:.2f}'.format(ul_corner_frame_cnt*spf),
+						 '{:.2f}'.format(ll_corner_frame_cnt*spf), '{:.2f}'.format(ur_corner_frame_cnt*spf),
+						 '{:.2f}'.format(lr_corner_frame_cnt*spf), '{:.2f}'.format(ul_thigmo_frame_cnt*spf),
+						 '{:.2f}'.format(ll_thigmo_frame_cnt*spf), '{:.2f}'.format(ur_thigmo_frame_cnt*spf),
+						 '{:.2f}'.format(lr_thigmo_frame_cnt*spf)))
 	print 'Done with ' + csv_filename + '!'
 	print '#' * 45
 
