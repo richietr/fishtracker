@@ -9,12 +9,12 @@
   "CROP_X2" : "1280",
   "CROP_Y1" : "0",
   "CROP_Y2" : "720",
-  "TANK_LENGTH_CM" : "40.64",
-  "TANK_WIDTH_CM" : "21.59",
+  "TANK_LENGTH_CM" : "40.0",
+  "TANK_WIDTH_CM" : "20.0",
   "MIRROR_LENGTH_CM" : "5.08",
   "MIRROR_ZONE_WIDTH_CM" : "2",
   "TRACKING_WINDOW_LEN_PIXELS" : "100",
-  "TARGET_ZONE_CM" : "10",
+  "TARGET_ZONE_CM" : "11",
   "HIGH_STIMULUS_LETTER" : "I",
   "LOW_STIMULUS_LETTER" : "O",
   "FREEZE_TIME_MIN_SECS" : "3",
@@ -34,10 +34,10 @@
     "TANK_UPPER_LEFT_Y" : "128",
     "TANK_LOWER_LEFT_X" : "194",
     "TANK_LOWER_LEFT_Y" : "555",
-    "TANK_UPPER_RIGHT_X" : "1074",
+    "TANK_UPPER_RIGHT_X" : "1084",
     "TANK_UPPER_RIGHT_Y" : "126",
-    "TANK_LOWER_RIGHT_X" : "1077",
-    "TANK_LOWER_RIGHT_Y" : "554"
+    "TANK_LOWER_RIGHT_X" : "1080",
+    "TANK_LOWER_RIGHT_Y" : "561"
   },
   "Ivanka" : {
     "TANK_UPPER_LEFT_X" : "229",
@@ -48,5 +48,125 @@
     "TANK_UPPER_RIGHT_Y" : "116",
     "TANK_LOWER_RIGHT_X" : "1137",
     "TANK_LOWER_RIGHT_Y" : "517"
+  },
+  "Omi" : {
+    "TANK_UPPER_LEFT_X" : "116",
+    "TANK_UPPER_LEFT_Y" : "84",
+    "TANK_LOWER_LEFT_X" : "116",
+    "TANK_LOWER_LEFT_Y" : "596",
+    "TANK_UPPER_RIGHT_X" : "1166",
+    "TANK_UPPER_RIGHT_Y" : "94",
+    "TANK_LOWER_RIGHT_X" : "1145",
+    "TANK_LOWER_RIGHT_Y" : "598"
+  },
+  "Ifeoma" : {
+    "TANK_UPPER_LEFT_X" : "115",
+    "TANK_UPPER_LEFT_Y" : "113",
+    "TANK_LOWER_LEFT_X" : "108",
+    "TANK_LOWER_LEFT_Y" : "629",
+    "TANK_UPPER_RIGHT_X" : "1194",
+    "TANK_UPPER_RIGHT_Y" : "119",
+    "TANK_LOWER_RIGHT_X" : "1177",
+    "TANK_LOWER_RIGHT_Y" : "659"
+  },
+  "Indy" : {
+    "TANK_UPPER_LEFT_X" : "146",
+    "TANK_UPPER_LEFT_Y" : "84",
+    "TANK_LOWER_LEFT_X" : "145",
+    "TANK_LOWER_LEFT_Y" : "599",
+    "TANK_UPPER_RIGHT_X" : "1175",
+    "TANK_UPPER_RIGHT_Y" : "85",
+    "TANK_LOWER_RIGHT_X" : "1175",
+    "TANK_LOWER_RIGHT_Y" : "592"
+  },
+  "Izzy" : {
+    "TANK_UPPER_LEFT_X" : "143",
+    "TANK_UPPER_LEFT_Y" : "109",
+    "TANK_LOWER_LEFT_X" : "128",
+    "TANK_LOWER_LEFT_Y" : "623",
+    "TANK_UPPER_RIGHT_X" : "1164",
+    "TANK_UPPER_RIGHT_Y" : "102",
+    "TANK_LOWER_RIGHT_X" : "1162",
+    "TANK_LOWER_RIGHT_Y" : "597"
+  },
+  "Oahu" : {
+    "TANK_UPPER_LEFT_X" : "90",
+    "TANK_UPPER_LEFT_Y" : "116",
+    "TANK_LOWER_LEFT_X" : "87",
+    "TANK_LOWER_LEFT_Y" : "614",
+    "TANK_UPPER_RIGHT_X" : "1156",
+    "TANK_UPPER_RIGHT_Y" : "135",
+    "TANK_LOWER_RIGHT_X" : "1151",
+    "TANK_LOWER_RIGHT_Y" : "640"
+  },
+  "Oteria" : {
+    "TANK_UPPER_LEFT_X" : "133",
+    "TANK_UPPER_LEFT_Y" : "62",
+    "TANK_LOWER_LEFT_X" : "129",
+    "TANK_LOWER_LEFT_Y" : "556",
+    "TANK_UPPER_RIGHT_X" : "1136",
+    "TANK_UPPER_RIGHT_Y" : "79",
+    "TANK_LOWER_RIGHT_X" : "1132",
+    "TANK_LOWER_RIGHT_Y" : "565"
+  },
+  "Ivonne" : {
+    "TANK_UPPER_LEFT_X" : "146",
+    "TANK_UPPER_LEFT_Y" : "84",
+    "TANK_LOWER_LEFT_X" : "145",
+    "TANK_LOWER_LEFT_Y" : "599",
+    "TANK_UPPER_RIGHT_X" : "1175",
+    "TANK_UPPER_RIGHT_Y" : "85",
+    "TANK_LOWER_RIGHT_X" : "1175",
+    "TANK_LOWER_RIGHT_Y" : "592"
+  },
+  "Ollie" : {
+    "TANK_UPPER_LEFT_X" : "146",
+    "TANK_UPPER_LEFT_Y" : "84",
+    "TANK_LOWER_LEFT_X" : "145",
+    "TANK_LOWER_LEFT_Y" : "599",
+    "TANK_UPPER_RIGHT_X" : "1175",
+    "TANK_UPPER_RIGHT_Y" : "85",
+    "TANK_LOWER_RIGHT_X" : "1175",
+    "TANK_LOWER_RIGHT_Y" : "592"
+  },
+  "Olopte" : {
+    "TANK_UPPER_LEFT_X" : "146",
+    "TANK_UPPER_LEFT_Y" : "84",
+    "TANK_LOWER_LEFT_X" : "145",
+    "TANK_LOWER_LEFT_Y" : "599",
+    "TANK_UPPER_RIGHT_X" : "1175",
+    "TANK_UPPER_RIGHT_Y" : "85",
+    "TANK_LOWER_RIGHT_X" : "1175",
+    "TANK_LOWER_RIGHT_Y" : "592"
+  },
+  "Ozzi" : {
+    "TANK_UPPER_LEFT_X" : "146",
+    "TANK_UPPER_LEFT_Y" : "84",
+    "TANK_LOWER_LEFT_X" : "145",
+    "TANK_LOWER_LEFT_Y" : "599",
+    "TANK_UPPER_RIGHT_X" : "1175",
+    "TANK_UPPER_RIGHT_Y" : "85",
+    "TANK_LOWER_RIGHT_X" : "1175",
+    "TANK_LOWER_RIGHT_Y" : "592"
+  },
+  "Iris" : {
+    "TANK_UPPER_LEFT_X" : "76",
+    "TANK_UPPER_LEFT_Y" : "97",
+    "TANK_LOWER_LEFT_X" : "90",
+    "TANK_LOWER_LEFT_Y" : "623",
+    "TANK_UPPER_RIGHT_X" : "1153",
+    "TANK_UPPER_RIGHT_Y" : "80",
+    "TANK_LOWER_RIGHT_X" : "1175",
+    "TANK_LOWER_RIGHT_Y" : "620"
+  },
+  "Ocean" : {
+    "TANK_UPPER_LEFT_X" : "91",
+    "TANK_UPPER_LEFT_Y" : "109",
+    "TANK_LOWER_LEFT_X" : "99",
+    "TANK_LOWER_LEFT_Y" : "632",
+    "TANK_UPPER_RIGHT_X" : "1194",
+    "TANK_UPPER_RIGHT_Y" : "113",
+    "TANK_LOWER_RIGHT_X" : "1178",
+    "TANK_LOWER_RIGHT_Y" : "641"
   }
 }

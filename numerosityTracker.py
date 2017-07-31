@@ -167,13 +167,13 @@ def find_fish(frame,totalVideoPixels, unified):
 		return None
 
 # computes an average frame of a video (background image)
-def getBackgroundImage(vid,numFrames,length):
+def get_background_image(vid,numFrames,length):
 
 	print '#' * 45
 	print 'Getting background image...'
 
-	frames2skip = NUM_FRAMES_TO_SKIP*1.5
-	frames2trim = NUM_FRAMES_TO_TRIM*1.5
+	frames2skip = NUM_FRAMES_TO_SKIP*1.0
+	frames2trim = NUM_FRAMES_TO_TRIM*1.0
 
 	# TODO: remove this (or not), but for now skipping some frames at beginning
 	#       of numerosity where the feeder is moving
@@ -181,13 +181,14 @@ def getBackgroundImage(vid,numFrames,length):
 	while j < frames2skip:
 		vid.read()
 		j+=1
+	orig_len = length
 	length = length - frames2skip - frames2trim
 
 	# set a counter
 	i = 0
 	#vid.set(1, 200) # TODO: what is this doing?
 	_,frame = vid.read()
-	frameCnt = 1
+	frameCnt = j
 
 	# initialize an empty array the same size of the pic to update
 	update = np.float32(frame)
@@ -197,29 +198,39 @@ def getBackgroundImage(vid,numFrames,length):
 
 	# loop through every skip frames to build up average background
 	while i < numFrames:
+
 		# grab a frame
 		_,frame = vid.read()
 		frameCnt += 1
 
 		# skip some frames
-		if i < numFrames-1:
+		if i < numFrames-skip-1:
 			for j in range(1,skip):
 				vid.read()
 				frameCnt += 1
 
 		# main function
-		cv2.accumulateWeighted(frame,update,0.001)
-		final = cv2.convertScaleAbs(update)
+		#cv2.accumulateWeighted(frame,update,0.001)
+		#cv2.accumulate(frame,update)
+		update+=frame
+		#final = cv2.convertScaleAbs(update)
 
 		# increment the counter
 		i += 1
 
 		# print something every 100 frames so the user knows the gears are grinding
 		if i%100 == 0:
-			print "Detecting background -- on frame " + str(frameCnt-skip) + " of " + str(length)
+			print "Detecting background -- on frame " + str(frameCnt) + " of " + str(orig_len)
 
 	print 'Background detection complete!'
 	print '#' * 45
+
+	#final = update
+	#final[:] = [x / numFrames for x in update]
+
+	final = update/numFrames
+	#final = cv2.convertScaleAbs(final)
+	#final = cv2.blur(final,(9,9))
 
 	return final
 
@@ -250,8 +261,43 @@ if __name__ == '__main__':
 	args = vars(ap.parse_args())
 
 	path = args["path2video"]
-	#path = 'gambusia_15_TBD_female_Imelda_1_1_0_0_0_both_B.mkv'
-	#path = 'gambusia_15_TBD_female_Isadora_1_1_0_0_0_both_B.mkv'
+	#path = '/media/jenkins/so_much_stuff1/num/gambusia_14_TBD_female_Ifeoma_9_1_7_14_50_none_L.mkv'
+	#path = '/media/jenkins/so_much_stuff1/num/gambusia_14_TBD_female_Indy_9_1_9_12_75_none_L.mkv'
+	#path = r'D:\num\gambusia_14_TBD_female_Izzy_9_1_9_12_75_none_L.mkv'
+	#path = '/media/jenkins/so_much_stuff1/num/gambusia_14_TBD_female_Oahu_9_1_7_14_50_none_R.mkv'
+	#path = '/media/jenkins/so_much_stuff1/num/gambusia_14_TBD_female_Oteria_9_1_8_12_67_none_R.mkv'
+	#path = '/media/jenkins/so_much_stuff1/num/gambusia_15_TBD_female_Imelda_9_1_7_14_50_none_L.mkv'
+	#path = '/media/jenkins/so_much_stuff1/num/gambusia_15_TBD_female_Isadora_9_1_9_12_75_none_L.mkv'
+	#path = r'D:\num\gambusia_15_TBD_female_Isadora_9_1_9_12_75_none_L.mkv'
+	#path = '/media/jenkins/so_much_stuff1/num/gambusia_15_TBD_female_Ivonne_9_1_9_12_75_none_L.mkv'
+	#path = r'D:\num\gambusia_15_TBD_female_Ivonne_9_1_9_12_75_none_L.mkv'
+	#path = '/media/jenkins/so_much_stuff1/num/gambusia_15_TBD_female_Ollie_9_1_8_12_67_none_R.mkv'
+	#path = r'D:\num\gambusia_15_TBD_female_Ollie_9_1_8_12_67_none_R.mkv'
+	#path = '/media/jenkins/so_much_stuff1/num/gambusia_15_TBD_female_Olopte_9_1_7_14_50_none_R.mkv'
+	#path = r'D:\num\gambusia_15_TBD_female_Olopte_9_1_7_14_50_none_R.mkv'
+	#path = r'D:\num\gambusia_15_TBD_female_Ozzi_9_1_9_12_75_none_R.h264'
+	#path = r'D:\num\gambusia_14_TBD_female_Omi_9_1_9_12_75_none_R.h264'
+	
+	#path = r'D:\num\gambusia_9_TBD_female_Ivanka_9_1_7_14_50_none_L.mkv'
+	#path = r'D:\num\gambusia_13_TBD_female_Iris_9_1_7_14_50_none_L.mkv'
+	#path = r'D:\num\gambusia_13_TBD_female_Ocean_9_1_7_14_50_none_R.mkv'
+	#path = r'D:\num\gambusia_14_TBD_female_Indy_9_1_9_12_75_none_L.mkv'
+
+	#path = r'D:\num\gambusia_9_TBD_female_Ivanka_9_2_12_9_75_none_R.mkv'
+	#path = r'D:\num\gambusia_13_TBD_female_Iris_9_2_12_9_75_none_R.mkv'
+	#path = r'D:\num\gambusia_13_TBD_female_Ocean_9_2_12_9_75_none_L.mkv'
+	#path = r'D:\num\gambusia_14_TBD_female_Indy_9_2_12_8_67_none_R.mkv'
+	
+	#path = r'D:\num\gambusia_9_TBD_female_Ivanka_9_3_8_12_67_none_L.mkv'
+	#path = r'D:\num\gambusia_13_TBD_female_Iris_9_3_8_12_67_none_L.mkv' #look at this
+	#path = r'D:\num\gambusia_13_TBD_female_Ocean_9_3_8_12_67_none_R.mkv'
+	#path = r'D:\num\gambusia_14_TBD_female_Indy_9_3_7_14_50_none_L.mkv'
+
+	#path = r'D:\num\gambusia_9_TBD_female_Ivanka_9_4_12_6_50_right_R.mkv' #look at this
+	#path = r'D:\num\gambusia_13_TBD_female_Iris_9_4_12_6_50_right_R.mkv'
+	#path = r'D:\num\gambusia_13_TBD_female_Ocean_9_4_12_6_50_left_L.mkv'
+	#path = r'D:\num\gambusia_14_TBD_female_Indy_9_4_6_12_50_left_L.mkv'
+	
 	if args["show_images"]:
 		show_images = True
 	else:
@@ -259,7 +305,8 @@ if __name__ == '__main__':
 
 	# Parse out filepath
 	path_strip = os.path.splitext(path)[0]
-	path_parts = path_strip.split('/')
+	#path_parts = path_strip.split('/')
+	path_parts = path_strip.split('\\')
 	filename = path_parts[len(path_parts)-1]
 	filename_parts = filename.split('_')
 
@@ -282,14 +329,14 @@ if __name__ == '__main__':
 	FEED_DELAY = 10+2 # secs
 	FEED_DURATION = 220-2 # secs
 	TOTAL_TIME = 245 # secs
-	NUM_FRAMES_FOR_BACKGROUND = 1000
+	NUM_FRAMES_FOR_BACKGROUND = 5
 	EDGE_BUFFER = 75 #pixels
 	CROP_X1 = 0
 	CROP_X2 = 1280
 	CROP_Y1 = 0
 	CROP_Y2 = 720
-	TANK_LENGTH_CM = 40.64
-	TANK_WIDTH_CM = 21.59
+	TANK_LENGTH_CM = 40.0 #40.64
+	TANK_WIDTH_CM = 20.0 #21.59
 	TANK_UPPER_LEFT_X = 187
 	TANK_UPPER_LEFT_Y = 127
 	TANK_LOWER_LEFT_X = 195
@@ -436,6 +483,10 @@ if __name__ == '__main__':
 	freeze_frame_cnt = 0
 	potential_freeze_frames = 0
 	freeze_time_secs = 0
+	total_time = 0
+	time_in_center = 0
+	in_center = False
+	center_frame_cnt = 0
 
 	# tracker metrics
 	frames_b4_acq = 0
@@ -555,13 +606,15 @@ if __name__ == '__main__':
 	thigmo_lower_y = lower_mirror_y
 
 	# open the video
+	#path = os.path.normpath(path)
 	cap = cv2.VideoCapture(path)
 	if not cap.isOpened():
 		print "ERROR> Could not open :",path
 
 	# get some info about the video
 	length = int(cap.get(cv2.cv.CV_CAP_PROP_FRAME_COUNT))
-	if length < 0:		
+	#length = 5781
+	if length < 0:
 		# manually count how many frames, this will take a little time...
 		print 'Counting frames..'
 		length = 0
@@ -570,7 +623,7 @@ if __name__ == '__main__':
 			print "ERROR> Could not open :",path
 			sys.exit(1)
 		while(cap.isOpened()):
-			ret,frame = cap.read()	
+			ret,frame = cap.read()
 			if ret == False:
 				print "didn't read frame from video file"
 				break
@@ -595,7 +648,8 @@ if __name__ == '__main__':
 		print "ERROR> Could not open :",path
 
 	# calculate background image of tank for x frames
-	background = getBackgroundImage(cap,NUM_FRAMES_FOR_BACKGROUND,(length-NUM_FRAMES_TO_TRIM))
+	background = get_background_image(cap,NUM_FRAMES_FOR_BACKGROUND,length)
+	#background = get_background_image(cap,(length-NUM_FRAMES_TO_TRIM),length)
 
 	# blur and crop background and save a copy of the background image for reference
 	bm_initial = blur_and_mask(background, lower_bound, upper_bound, left_bound, right_bound)
@@ -646,14 +700,18 @@ if __name__ == '__main__':
 			difference = apply_mask(difference, new_lower_bound, new_upper_bound, new_left_bound, new_right_bound)
 
 		# find the centroid of the largest blob
-		imgray = cv2.cvtColor(difference, cv2.COLOR_BGR2GRAY)
-		ret,thresh = cv2.threshold(imgray,15,255,0)
+		imdiff = cv2.cvtColor(difference, cv2.COLOR_BGR2GRAY)
+		if show_images:
+			cv2.imshow('imdiff',imdiff)
+		#ret,thresh = cv2.threshold(imdiff,np.amax(imdiff),255,0)
+		ret,thresh = cv2.threshold(imdiff,15,255,0)
 		if show_images:
 			cv2.imshow('thresh',thresh)
 
 		unified = merge_contours(frame)
 		#unified = None
 		center = find_fish(thresh, vidWidth*vidHeight, unified)
+		#center = None
 		#print "Center: " + str(center) + "\n"
 
 		# calc distance between current center and previous center
@@ -708,6 +766,38 @@ if __name__ == '__main__':
 			#print 'new_left_bound='  + str(new_left_bound)
 			#print 'new_right_bound=' + str(new_right_bound)
 
+			# if frames_not_tracking > 0 then apply half to prev zone and half to new zone
+			if in_left_target:
+				left_target_frame_cnt += (frames_not_tracking/2)
+			elif in_right_target:
+				right_target_frame_cnt += (frames_not_tracking/2)
+			elif in_lower_mirror:
+				lower_mirror_frame_cnt += (frames_not_tracking/2)
+			elif in_upper_mirror:
+				upper_mirror_frame_cnt += (frames_not_tracking/2)
+			elif in_upper_mirror:
+				upper_mirror_frame_cnt += (frames_not_tracking/2)
+			elif in_ul_corner:
+				ul_corner_frame_cnt += (frames_not_tracking/2)
+			elif in_ll_corner:
+				ll_corner_frame_cnt += (frames_not_tracking/2)
+			elif in_ur_corner:
+				ur_corner_frame_cnt += (frames_not_tracking/2)
+			elif in_lr_corner:
+				lr_corner_frame_cnt += (frames_not_tracking/2)
+			elif in_ul_thigmo:
+				ul_thigmo_frame_cnt += (frames_not_tracking/2)
+			elif in_ll_thigmo:
+				ll_thigmo_frame_cnt += (frames_not_tracking/2)
+			elif in_ur_thigmo:
+				ur_thigmo_frame_cnt += (frames_not_tracking/2)
+			elif in_lr_thigmo:
+				lr_thigmo_frame_cnt += (frames_not_tracking/2)
+			elif in_center:
+				center_frame_cnt += (frames_not_tracking/2)
+				
+			frames_not_tracking = frames_not_tracking/2
+			
 			# check if left target zone entry occurred
 			if not in_left_target and center[0] < left_target_x:
 				left_target_entries += 1
@@ -811,6 +901,10 @@ if __name__ == '__main__':
 			else:
 				in_lr_corner = False
 
+			if not in_left_target and not in_right_target and not in_ll_corner and not in_lr_corner and not in_ul_corner and not in_ur_corner and not in_ll_thigmo and not in_lr_thigmo and not in_ul_thigmo and not in_ur_thigmo and not in_lower_mirror and not in_upper_mirror:
+				in_center = True
+				center_frame_cnt += (frames_not_tracking + 1)
+				
 			# check for freezing
 			if freeze_start is None:
 				freeze_start = center
@@ -879,7 +973,7 @@ if __name__ == '__main__':
 
 			# draw red circle on largest
 			cv2.circle(frame,center,4,[0,0,255],-1)
-			
+
 			frames_not_tracking = 0
 
 		else:
@@ -939,6 +1033,16 @@ if __name__ == '__main__':
 			cv2.rectangle(frame,(thigmo_ll_x1,thigmo_lower_y),(thigmo_ll_x2,vidHeight),(0,0,255),2)
 
 		if in_lr_thigmo:
+			cv2.rectangle(frame,(thigmo_lr_x1,thigmo_lower_y),(thigmo_lr_x2,vidHeight),(0,0,255),2)
+
+		if False:
+			cv2.rectangle(frame,(0,0),(left_target_x,vidHeight),(0,255,0),2)
+			cv2.rectangle(frame,(right_target_x,0),(vidWidth,vidHeight),(0,255,0),2)
+			cv2.rectangle(frame,(upper_mirror_x1,0),(upper_mirror_x2,upper_mirror_y),(255,0,0),2)
+			cv2.rectangle(frame,(lower_mirror_x1,lower_mirror_y),(lower_mirror_x2,vidHeight),(255,0,0),2)
+			cv2.rectangle(frame,(thigmo_ul_x1,0),(thigmo_ul_x2,thigmo_upper_y),(0,0,255),2)
+			cv2.rectangle(frame,(thigmo_ur_x1,0),(thigmo_ur_x2,thigmo_upper_y),(0,0,255),2)
+			cv2.rectangle(frame,(thigmo_ll_x1,thigmo_lower_y),(thigmo_ll_x2,vidHeight),(0,0,255),2)
 			cv2.rectangle(frame,(thigmo_lr_x1,thigmo_lower_y),(thigmo_lr_x2,vidHeight),(0,0,255),2)
 
 		if acquired and not (in_left_target or in_right_target or in_ll_corner or in_lr_corner or in_ul_corner or \
@@ -1045,7 +1149,11 @@ if __name__ == '__main__':
 	else:
 		prop_time_center = 100 - (prop_time_reinforced+prop_time_non_reinforced+prop_time_mirror+prop_time_thigmo)
 	print 'Proportion time in Center Zone: ' + str(prop_time_center) + '%'
-
+	
+	total_time = counter * spf
+	time_in_center = total_time - (time_in_reinforced_target-time_in_non_reinforced_target-time_in_mirror-thigmotaxis_score)
+	print 'Time in Center Zone: ' + str(time_in_center) + ' secs'
+	
 	time_in_corners = (ul_corner_frame_cnt + ur_corner_frame_cnt + ll_corner_frame_cnt + lr_corner_frame_cnt) * spf
 
 	if (ul_corner_frame_cnt + ur_corner_frame_cnt + ll_corner_frame_cnt + lr_corner_frame_cnt) == 0:
@@ -1081,10 +1189,12 @@ if __name__ == '__main__':
 			                'Time.Thigmo.Secs', 'Prop.Thigmo.%', \
 			                'Prop.Center.%', 'Activity.Level.CM', \
 			                'Time.Corners.Secs', 'Prop.Corners.%', \
-			                'First.Target.Zone', 'UL.Corner.Secs', \
-			                'LL.Corner.Secs', 'UR.Corner.Secs', 'LR.Corner.Secs',
-			                'UL.Thigmo.Secs', 'LL.Thigmo.Secs', 'UR.Thigmo.Secs',
-			                'LR.Thigmo.Secs'))
+			                'First.Target.Zone', \
+			                'Left.Target.Secs', 'Right.Target.Secs', \
+			                'UL.Thigmo.Secs', 'LL.Thigmo.Secs', \
+			                'UR.Thigmo.Secs', 'LR.Thigmo.Secs', \
+			                'Center.Secs', 'Upper.Mirror.Secs', \
+			                'Lower.Mirror.Secs', 'Total.Secs'))
 
 	# Open csv file in append mode
 	with open(csv_filename, 'a') as f:
@@ -1100,12 +1210,18 @@ if __name__ == '__main__':
 						 '{:.2f}'.format(time_in_mirror), '{:.2f}'.format(prop_time_mirror), \
 						 '{:.2f}'.format(thigmotaxis_score), '{:.2f}'.format(prop_time_thigmo), \
 						 '{:.2f}'.format(prop_time_center), '{:.2f}'.format(activity_level), \
-						 '{:.2f}'.format(time_in_corners), '{:.2f}'.format(prop_corners),
-						 first_target_zone, '{:.2f}'.format(ul_corner_frame_cnt*spf),
-						 '{:.2f}'.format(ll_corner_frame_cnt*spf), '{:.2f}'.format(ur_corner_frame_cnt*spf),
-						 '{:.2f}'.format(lr_corner_frame_cnt*spf), '{:.2f}'.format(ul_thigmo_frame_cnt*spf),
-						 '{:.2f}'.format(ll_thigmo_frame_cnt*spf), '{:.2f}'.format(ur_thigmo_frame_cnt*spf),
-						 '{:.2f}'.format(lr_thigmo_frame_cnt*spf)))
+						 '{:.2f}'.format(time_in_corners), '{:.2f}'.format(prop_corners), \
+						 first_target_zone, \
+						 '{:.2f}'.format((left_target_frame_cnt-ll_corner_frame_cnt-ul_corner_frame_cnt)*spf), \
+						 '{:.2f}'.format((right_target_frame_cnt-lr_corner_frame_cnt-ur_corner_frame_cnt)*spf), \
+						 '{:.2f}'.format((ul_thigmo_frame_cnt+ul_corner_frame_cnt)*spf), \
+						 '{:.2f}'.format((ll_thigmo_frame_cnt+ll_corner_frame_cnt)*spf), \
+						 '{:.2f}'.format((ur_thigmo_frame_cnt+ur_corner_frame_cnt)*spf), \
+						 '{:.2f}'.format((lr_thigmo_frame_cnt+lr_corner_frame_cnt)*spf), \
+						 '{:.2f}'.format(center_frame_cnt*spf), \
+						 '{:.2f}'.format(upper_mirror_frame_cnt*spf), \
+						 '{:.2f}'.format(lower_mirror_frame_cnt*spf), \
+						 '{:.2f}'.format((left_target_frame_cnt+right_target_frame_cnt+ul_thigmo_frame_cnt+ll_thigmo_frame_cnt+ur_thigmo_frame_cnt+lr_thigmo_frame_cnt+center_frame_cnt+lower_mirror_frame_cnt+upper_mirror_frame_cnt)*spf)))
 	print 'Done with ' + csv_filename + '!'
 	print '#' * 45
 
@@ -1137,29 +1253,29 @@ if __name__ == '__main__':
 	print 'Done with ' + tracker_log + '!'
 	print '#' * 45
 
-
-	print '\n'
-	print '#'*45
-	print 'Plot some stuff!'
-	fig = plt.figure()
-	ax = fig.add_subplot(111)
-
-	y = [prop_time_reinforced, prop_time_non_reinforced, prop_time_mirror, prop_time_thigmo, prop_time_center]
-	N = len(y)
-	x = range(N)
-	width = 1/6.0
-	ax.bar(x, y, width, color="blue")
-	ax.set_xticklabels(['_', \
-						'Reinforced', \
-	                    'Non.Reinforced', \
-	                    'Mirror', \
-	                    'Thigmo', \
-	                    'Center'])
-	ax.set_ylabel('% in zone')
-	ax.set_title('Prop.In.Zones')
-	fig.savefig('Prop_In_Zones.png', bbox_inches='tight')
-
-	print '#'*45, '\n'
+	if False:
+		print '\n'
+		print '#'*45
+		print 'Plot some stuff!'
+		fig = plt.figure()
+		ax = fig.add_subplot(111)
+	
+		y = [prop_time_reinforced, prop_time_non_reinforced, prop_time_mirror, prop_time_thigmo, prop_time_center]
+		N = len(y)
+		x = range(N)
+		width = 1/6.0
+		ax.bar(x, y, width, color="blue")
+		ax.set_xticklabels(['_', \
+							'Reinforced', \
+		                    'Non.Reinforced', \
+		                    'Mirror', \
+		                    'Thigmo', \
+		                    'Center'])
+		ax.set_ylabel('% in zone')
+		ax.set_title('Prop.In.Zones')
+		fig.savefig('Prop_In_Zones.png', bbox_inches='tight')
+	
+		print '#'*45, '\n'
 
 	### after the program exits, print some useful stuff to the screen
 	# first calculate realized fps
