@@ -277,7 +277,7 @@ if __name__ == '__main__':
 	#path = r'D:\num\gambusia_15_TBD_female_Olopte_9_1_7_14_50_none_R.mkv'
 	#path = r'D:\num\gambusia_15_TBD_female_Ozzi_9_1_9_12_75_none_R.h264'
 	#path = r'D:\num\gambusia_14_TBD_female_Omi_9_1_9_12_75_none_R.h264'
-	
+
 	#path = r'D:\num\gambusia_9_TBD_female_Ivanka_9_1_7_14_50_none_L.mkv'
 	#path = r'D:\num\gambusia_13_TBD_female_Iris_9_1_7_14_50_none_L.mkv'
 	#path = r'D:\num\gambusia_13_TBD_female_Ocean_9_1_7_14_50_none_R.mkv'
@@ -287,7 +287,7 @@ if __name__ == '__main__':
 	#path = r'D:\num\gambusia_13_TBD_female_Iris_9_2_12_9_75_none_R.mkv'
 	#path = r'D:\num\gambusia_13_TBD_female_Ocean_9_2_12_9_75_none_L.mkv'
 	#path = r'D:\num\gambusia_14_TBD_female_Indy_9_2_12_8_67_none_R.mkv'
-	
+
 	#path = r'D:\num\gambusia_9_TBD_female_Ivanka_9_3_8_12_67_none_L.mkv'
 	#path = r'D:\num\gambusia_13_TBD_female_Iris_9_3_8_12_67_none_L.mkv' #look at this
 	#path = r'D:\num\gambusia_13_TBD_female_Ocean_9_3_8_12_67_none_R.mkv'
@@ -297,7 +297,7 @@ if __name__ == '__main__':
 	#path = r'D:\num\gambusia_13_TBD_female_Iris_9_4_12_6_50_right_R.mkv'
 	#path = r'D:\num\gambusia_13_TBD_female_Ocean_9_4_12_6_50_left_L.mkv'
 	#path = r'D:\num\gambusia_14_TBD_female_Indy_9_4_6_12_50_left_L.mkv'
-	
+
 	if args["show_images"]:
 		show_images = True
 	else:
@@ -795,9 +795,9 @@ if __name__ == '__main__':
 				lr_thigmo_frame_cnt += (frames_not_tracking/2)
 			elif in_center:
 				center_frame_cnt += (frames_not_tracking/2)
-				
+
 			frames_not_tracking = frames_not_tracking/2
-			
+
 			# check if left target zone entry occurred
 			if not in_left_target and center[0] < left_target_x:
 				left_target_entries += 1
@@ -904,7 +904,7 @@ if __name__ == '__main__':
 			if not in_left_target and not in_right_target and not in_ll_corner and not in_lr_corner and not in_ul_corner and not in_ur_corner and not in_ll_thigmo and not in_lr_thigmo and not in_ul_thigmo and not in_ur_thigmo and not in_lower_mirror and not in_upper_mirror:
 				in_center = True
 				center_frame_cnt += (frames_not_tracking + 1)
-				
+
 			# check for freezing
 			if freeze_start is None:
 				freeze_start = center
@@ -1149,11 +1149,11 @@ if __name__ == '__main__':
 	else:
 		prop_time_center = 100 - (prop_time_reinforced+prop_time_non_reinforced+prop_time_mirror+prop_time_thigmo)
 	print 'Proportion time in Center Zone: ' + str(prop_time_center) + '%'
-	
+
 	total_time = counter * spf
 	time_in_center = total_time - (time_in_reinforced_target-time_in_non_reinforced_target-time_in_mirror-thigmotaxis_score)
 	print 'Time in Center Zone: ' + str(time_in_center) + ' secs'
-	
+
 	time_in_corners = (ul_corner_frame_cnt + ur_corner_frame_cnt + ll_corner_frame_cnt + lr_corner_frame_cnt) * spf
 
 	if (ul_corner_frame_cnt + ur_corner_frame_cnt + ll_corner_frame_cnt + lr_corner_frame_cnt) == 0:
@@ -1194,11 +1194,18 @@ if __name__ == '__main__':
 			                'UL.Thigmo.Secs', 'LL.Thigmo.Secs', \
 			                'UR.Thigmo.Secs', 'LR.Thigmo.Secs', \
 			                'Center.Secs', 'Upper.Mirror.Secs', \
-			                'Lower.Mirror.Secs', 'Total.Secs'))
+			                'Lower.Mirror.Secs', 'Total.Secs', \
+							'Prop.Left.Target', 'Prop.Right.Target', \
+			                'Prop.UL.Thigmo', 'Prop.LL.Thigmo', \
+			                'Prop.UR.Thigmo', 'Prop.LR.Thigmo', \
+			                'Prop.Center', 'Prop.Upper.Mirror', \
+			                'Prop.Lower.Mirror'))
 
 	# Open csv file in append mode
 	with open(csv_filename, 'a') as f:
 		writer = csv.writer(f)
+
+		this_total_time = (left_target_frame_cnt+right_target_frame_cnt+ul_thigmo_frame_cnt+ll_thigmo_frame_cnt+ur_thigmo_frame_cnt+lr_thigmo_frame_cnt+center_frame_cnt+lower_mirror_frame_cnt+upper_mirror_frame_cnt)*spf
 
 		# write the data (limit all decimals to 2 digits)
 		writer.writerow((fishid, round_num, day, session, stimulus, that_stimulus, \
@@ -1221,7 +1228,16 @@ if __name__ == '__main__':
 						 '{:.2f}'.format(center_frame_cnt*spf), \
 						 '{:.2f}'.format(upper_mirror_frame_cnt*spf), \
 						 '{:.2f}'.format(lower_mirror_frame_cnt*spf), \
-						 '{:.2f}'.format((left_target_frame_cnt+right_target_frame_cnt+ul_thigmo_frame_cnt+ll_thigmo_frame_cnt+ur_thigmo_frame_cnt+lr_thigmo_frame_cnt+center_frame_cnt+lower_mirror_frame_cnt+upper_mirror_frame_cnt)*spf)))
+						 '{:.2f}'.format(this_total_time), \
+						 '{:.2f}'.format((((left_target_frame_cnt-ll_corner_frame_cnt-ul_corner_frame_cnt)*spf)/this_total_time)*100.0), \
+						 '{:.2f}'.format((((right_target_frame_cnt-lr_corner_frame_cnt-ur_corner_frame_cnt)*spf)/this_total_time)*100.0), \
+						 '{:.2f}'.format((((ul_thigmo_frame_cnt+ul_corner_frame_cnt)*spf)/this_total_time)*100.0), \
+						 '{:.2f}'.format((((ll_thigmo_frame_cnt+ll_corner_frame_cnt)*spf)/this_total_time)*100.0), \
+						 '{:.2f}'.format((((ur_thigmo_frame_cnt+ur_corner_frame_cnt)*spf)/this_total_time)*100.0), \
+						 '{:.2f}'.format((((lr_thigmo_frame_cnt+lr_corner_frame_cnt)*spf)/this_total_time)*100.0), \
+						 '{:.2f}'.format(((center_frame_cnt*spf)/this_total_time)*100.0), \
+						 '{:.2f}'.format(((upper_mirror_frame_cnt*spf)/this_total_time)*100.0), \
+						 '{:.2f}'.format(((lower_mirror_frame_cnt*spf)/this_total_time)*100.0)))
 	print 'Done with ' + csv_filename + '!'
 	print '#' * 45
 
@@ -1259,7 +1275,7 @@ if __name__ == '__main__':
 		print 'Plot some stuff!'
 		fig = plt.figure()
 		ax = fig.add_subplot(111)
-	
+
 		y = [prop_time_reinforced, prop_time_non_reinforced, prop_time_mirror, prop_time_thigmo, prop_time_center]
 		N = len(y)
 		x = range(N)
@@ -1274,7 +1290,7 @@ if __name__ == '__main__':
 		ax.set_ylabel('% in zone')
 		ax.set_title('Prop.In.Zones')
 		fig.savefig('Prop_In_Zones.png', bbox_inches='tight')
-	
+
 		print '#'*45, '\n'
 
 	### after the program exits, print some useful stuff to the screen
