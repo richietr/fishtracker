@@ -145,7 +145,7 @@ def find_fish(frame,totalVideoPixels, unified, min_area_pixels, max_area_pixels,
 			if area < max_area_pixels*1.0 and area > min_area_pixels*1.0 and max(h,w) < max_height_pixels and max(h,w) > min_height_pixels:
 				idx = area_list.index(area)
 				potential_tracks.append(contours[idx])
-			else:
+			#else:
 				#print 'Area=' + str(area) + ', MaxH=' + str(max(h,w))
 				
 
@@ -486,6 +486,7 @@ if __name__ == '__main__':
 	tracker_log = 'num_tracker_log.csv'
 
 	counter = 0
+	faux_counter = 0
 	trained_high = False
 	trained_low = False
 	leftside_high = False
@@ -712,8 +713,8 @@ if __name__ == '__main__':
 	while(cap.isOpened()):
 
 		#print 'frame ' + str(counter) + '\n\n'
-		if not counter % 100:
-			print 'Processing frame ' + str(counter) + '...'
+		if not faux_counter % 100:
+			print 'Processing frame ' + str(faux_counter) + '...'
 
 		# for timing, maintaining constant fps
 		beginningOfLoop = time.time()
@@ -738,7 +739,7 @@ if __name__ == '__main__':
 		#	#difference = apply_mask(difference, TANK_UPPER_LEFT_Y+EDGE_BUFFER, TANK_LOWER_LEFT_Y-EDGE_BUFFER, left_target_x, right_target_x)
 		#	difference = apply_special_mask(difference, TANK_UPPER_LEFT_X+EDGE_BUFFER, TANK_UPPER_RIGHT_X-EDGE_BUFFER, TANK_UPPER_LEFT_Y+25, upper_mirror_y, left_target_x, right_target_x, lower_mirror_y, TANK_LOWER_LEFT_Y-25)
 		#elif not tracking:
-		if counter < (SCREEN_DELAY*fps):
+		if faux_counter < (SCREEN_DELAY*fps):
 			difference = apply_mask(difference, TANK_UPPER_LEFT_Y+PRE_SCREEN_EDGE_BUFFER_Y, TANK_LOWER_LEFT_Y-PRE_SCREEN_EDGE_BUFFER_Y, TANK_UPPER_LEFT_X+PRE_SCREEN_EDGE_BUFFER_X, TANK_UPPER_RIGHT_X-PRE_SCREEN_EDGE_BUFFER_X)
 		elif not tracking:
 			difference = apply_mask(difference, TANK_UPPER_LEFT_Y+EDGE_BUFFER_Y, TANK_LOWER_LEFT_Y-EDGE_BUFFER_Y, TANK_UPPER_LEFT_X+EDGE_BUFFER_X, TANK_UPPER_RIGHT_X-EDGE_BUFFER_X)
@@ -756,8 +757,8 @@ if __name__ == '__main__':
 			#cv2.imshow('thresh',thresh)
 			cv2.imshow('thresh', cv2.resize(thresh, (0,0), fx=0.5, fy=0.5))
 
-		unified = merge_contours(frame)
-		#unified = None
+		#unified = merge_contours(frame)
+		unified = None
 		center = find_fish(thresh, vidWidth*vidHeight, unified, FISH_AREA_MIN_PIXELS, FISH_AREA_MAX_PIXELS, FISH_HEIGHT_MIN_PIXELS, FISH_HEIGHT_MAX_PIXELS)
 		#center = None
 		#print 'Center: ' + str(center) + '\n'
@@ -777,15 +778,15 @@ if __name__ == '__main__':
 				dist_left = true_distance([left_target_center_x, target_center_y], center)
 				dist_right = true_distance([right_target_center_x, target_center_y], center)
 				if dist_left > dist_right:
-					right_target_frame_cnt += frames_b4_acq
+					#right_target_frame_cnt += frames_b4_acq
 					right_target_entries = 1 #should this be counted
-					print 'Counting first ' + str(frames_b4_acq) + ' frames to the right target zone'
+					#print 'Counting first ' + str(frames_b4_acq) + ' frames to the right target zone'
 					first_target_zone = 'right'
 					first_target_zone_entered = True
 				else:
-					left_target_frame_cnt += frames_b4_acq
+					#left_target_frame_cnt += frames_b4_acq
 					left_target_entries = 1 #should this be counted
-					print 'Counting first ' + str(frames_b4_acq) + ' frames to the left target zone'
+					#print 'Counting first ' + str(frames_b4_acq) + ' frames to the left target zone'
 					first_target_zone = 'left'
 					first_target_zone_entered = True
 
@@ -797,22 +798,22 @@ if __name__ == '__main__':
 					frames_since_last_track.append(frames_not_tracking)
 
 			# shrink search window
-			if center[1] - TRACKING_WINDOW_LEN < TANK_UPPER_LEFT_Y + EDGE_BUFFER_Y:
-				new_upper_bound = TANK_UPPER_LEFT_Y + EDGE_BUFFER_Y
-			else:
-				new_upper_bound = center[1] - TRACKING_WINDOW_LEN
-			if center[1] + TRACKING_WINDOW_LEN > TANK_LOWER_LEFT_Y - EDGE_BUFFER_Y:
-				new_lower_bound = TANK_LOWER_LEFT_Y - EDGE_BUFFER_Y
-			else:
-				new_lower_bound = center[1] + TRACKING_WINDOW_LEN
-			if center[0] - TRACKING_WINDOW_LEN < TANK_UPPER_LEFT_X + EDGE_BUFFER_X:
-				new_left_bound  = TANK_UPPER_LEFT_X + EDGE_BUFFER_X
-			else:
-				new_left_bound  = center[0] - TRACKING_WINDOW_LEN
-			if center[0] + TRACKING_WINDOW_LEN > TANK_UPPER_RIGHT_X - EDGE_BUFFER_X:
-				new_right_bound = TANK_UPPER_RIGHT_X - EDGE_BUFFER_X
-			else:
-				new_right_bound = center[0] + TRACKING_WINDOW_LEN
+			#if center[1] - TRACKING_WINDOW_LEN < TANK_UPPER_LEFT_Y + EDGE_BUFFER_Y:
+			#	new_upper_bound = TANK_UPPER_LEFT_Y + EDGE_BUFFER_Y
+			#else:
+			#	new_upper_bound = center[1] - TRACKING_WINDOW_LEN
+			#if center[1] + TRACKING_WINDOW_LEN > TANK_LOWER_LEFT_Y - EDGE_BUFFER_Y:
+			#	new_lower_bound = TANK_LOWER_LEFT_Y - EDGE_BUFFER_Y
+			#else:
+			#	new_lower_bound = center[1] + TRACKING_WINDOW_LEN
+			#if center[0] - TRACKING_WINDOW_LEN < TANK_UPPER_LEFT_X + EDGE_BUFFER_X:
+			#	new_left_bound  = TANK_UPPER_LEFT_X + EDGE_BUFFER_X
+			#else:
+			#	new_left_bound  = center[0] - TRACKING_WINDOW_LEN
+			#if center[0] + TRACKING_WINDOW_LEN > TANK_UPPER_RIGHT_X - EDGE_BUFFER_X:
+			#	new_right_bound = TANK_UPPER_RIGHT_X - EDGE_BUFFER_X
+			#else:
+			#	new_right_bound = center[0] + TRACKING_WINDOW_LEN
 			#print 'new_lower_bound=' + str(new_lower_bound)
 			#print 'new_upper_bound=' + str(new_upper_bound)
 			#print 'new_left_bound='  + str(new_left_bound)
@@ -1113,8 +1114,11 @@ if __name__ == '__main__':
 		k = cv2.waitKey(1)
 		if k == 27:
 			break
-
-		counter+=1
+		
+		if acquired:
+			counter+=1
+		
+		faux_counter+=1
 
 		if first_pass:
 			first_pass = False
