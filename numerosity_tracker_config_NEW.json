@@ -5,8 +5,8 @@
   "FEED_DURATION_SECS" : "245",
   "TOTAL_SECS" : "245",
   "NUM_FRAMES_FOR_BACKGROUND" : "1000",
-  "PRE_SCREEN_EDGE_BUFFER_PIXELS_X" : "75",
-  "PRE_SCREEN_EDGE_BUFFER_PIXELS_Y" : "75",
+  "PRE_SCREEN_EDGE_BUFFER_PIXELS_X" : "50",
+  "PRE_SCREEN_EDGE_BUFFER_PIXELS_Y" : "50",
   "EDGE_BUFFER_PIXELS_X" : "25",
   "EDGE_BUFFER_PIXELS_Y" : "10",
   "CROP_X1" : "0",
@@ -23,7 +23,7 @@
   "LOW_STIMULUS_LETTER" : "O",
   "FREEZE_TIME_MIN_SECS" : "3",
   "FREEZE_CIRCLE_DIAMETER_PIXELS" : "40",
-  "FISH_AREA_MIN_PIXELS" : "200",
+  "FISH_AREA_MIN_PIXELS" : "100",
   "FISH_AREA_MAX_PIXELS" : "2400",
   "FISH_HEIGHT_MIN_PIXELS" : "10",
   "FISH_HEIGHT_MAX_PIXELS" : "150",
@@ -287,5 +287,105 @@
     "TANK_UPPER_RIGHT_Y" : "229",
     "TANK_LOWER_RIGHT_X" : "1224",
     "TANK_LOWER_RIGHT_Y" : "793"
+  },
+  "Wheatley" : {
+    "TANK_UPPER_LEFT_X" : "75",
+    "TANK_UPPER_LEFT_Y" : "216",
+    "TANK_LOWER_LEFT_X" : "98",
+    "TANK_LOWER_LEFT_Y" : "754",
+    "TANK_UPPER_RIGHT_X" : "1195",
+    "TANK_UPPER_RIGHT_Y" : "206",
+    "TANK_LOWER_RIGHT_X" : "1198",
+    "TANK_LOWER_RIGHT_Y" : "761"
+  },
+  "Gary" : {
+    "TANK_UPPER_LEFT_X" : "93",
+    "TANK_UPPER_LEFT_Y" : "243",
+    "TANK_LOWER_LEFT_X" : "79",
+    "TANK_LOWER_LEFT_Y" : "793",
+    "TANK_UPPER_RIGHT_X" : "1221",
+    "TANK_UPPER_RIGHT_Y" : "217",
+    "TANK_LOWER_RIGHT_X" : "1218",
+    "TANK_LOWER_RIGHT_Y" : "790"
+  },
+  "walter" : {
+    "TANK_UPPER_LEFT_X" : "76",
+    "TANK_UPPER_LEFT_Y" : "223",
+    "TANK_LOWER_LEFT_X" : "78",
+    "TANK_LOWER_LEFT_Y" : "784",
+    "TANK_UPPER_RIGHT_X" : "1191",
+    "TANK_UPPER_RIGHT_Y" : "226",
+    "TANK_LOWER_RIGHT_X" : "1212",
+    "TANK_LOWER_RIGHT_Y" : "777"
+  },
+  "winnie" : {
+    "TANK_UPPER_LEFT_X" : "88",
+    "TANK_UPPER_LEFT_Y" : "235",
+    "TANK_LOWER_LEFT_X" : "66",
+    "TANK_LOWER_LEFT_Y" : "802",
+    "TANK_UPPER_RIGHT_X" : "1218",
+    "TANK_UPPER_RIGHT_Y" : "220",
+    "TANK_LOWER_RIGHT_X" : "1242",
+    "TANK_LOWER_RIGHT_Y" : "783"
+  },
+  "gregory" : {
+    "TANK_UPPER_LEFT_X" : "105",
+    "TANK_UPPER_LEFT_Y" : "225",
+    "TANK_LOWER_LEFT_X" : "78",
+    "TANK_LOWER_LEFT_Y" : "747",
+    "TANK_UPPER_RIGHT_X" : "1221",
+    "TANK_UPPER_RIGHT_Y" : "235",
+    "TANK_LOWER_RIGHT_X" : "1222",
+    "TANK_LOWER_RIGHT_Y" : "772"
+  },
+  "grace" : {
+    "TANK_UPPER_LEFT_X" : "81",
+    "TANK_UPPER_LEFT_Y" : "211",
+    "TANK_LOWER_LEFT_X" : "79",
+    "TANK_LOWER_LEFT_Y" : "745",
+    "TANK_UPPER_RIGHT_X" : "1213",
+    "TANK_UPPER_RIGHT_Y" : "204",
+    "TANK_LOWER_RIGHT_X" : "1215",
+    "TANK_LOWER_RIGHT_Y" : "765"
+  },
+  "Willow" : {
+    "TANK_UPPER_LEFT_X" : "94",
+    "TANK_UPPER_LEFT_Y" : "238",
+    "TANK_LOWER_LEFT_X" : "81",
+    "TANK_LOWER_LEFT_Y" : "795",
+    "TANK_UPPER_RIGHT_X" : "1212",
+    "TANK_UPPER_RIGHT_Y" : "219",
+    "TANK_LOWER_RIGHT_X" : "1234",
+    "TANK_LOWER_RIGHT_Y" : "778"
+  },
+  "George" : {
+    "TANK_UPPER_LEFT_X" : "103",
+    "TANK_UPPER_LEFT_Y" : "226",
+    "TANK_LOWER_LEFT_X" : "94",
+    "TANK_LOWER_LEFT_Y" : "748",
+    "TANK_UPPER_RIGHT_X" : "1216",
+    "TANK_UPPER_RIGHT_Y" : "235",
+    "TANK_LOWER_RIGHT_X" : "1216",
+    "TANK_LOWER_RIGHT_Y" : "772"
+  },
+  "Gail" : {
+    "TANK_UPPER_LEFT_X" : "85",
+    "TANK_UPPER_LEFT_Y" : "211",
+    "TANK_LOWER_LEFT_X" : "87",
+    "TANK_LOWER_LEFT_Y" : "738",
+    "TANK_UPPER_RIGHT_X" : "1206",
+    "TANK_UPPER_RIGHT_Y" : "214",
+    "TANK_LOWER_RIGHT_X" : "1210",
+    "TANK_LOWER_RIGHT_Y" : "765"
+  },
+  "Wendy" : {
+    "TANK_UPPER_LEFT_X" : "84",
+    "TANK_UPPER_LEFT_Y" : "228",
+    "TANK_LOWER_LEFT_X" : "87",
+    "TANK_LOWER_LEFT_Y" : "781",
+    "TANK_UPPER_RIGHT_X" : "1189",
+    "TANK_UPPER_RIGHT_Y" : "225",
+    "TANK_LOWER_RIGHT_X" : "1210",
+    "TANK_LOWER_RIGHT_Y" : "772"
   }
 }

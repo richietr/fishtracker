@@ -266,8 +266,18 @@ if __name__ == '__main__':
 
 	path = args['path2video']
 	
-	path = r'D:\num\gambusia_17_201_male_winston_9_1_7_14_50_none_R.mp4'
+	#path = r'D:\num\gambusia_17_201_male_winston_9_1_7_14_50_none_R.mp4'
 	#path = r'D:\num\gambusia_17_376_female_glinda_9_1_7_14_50_none_L.mp4'
+	#path = r'D:\new_num\gambusia_17_355_female_winnie_9_1_9_12_75_none_R.mp4'
+	#path = r'D:\new_num\gambusia_18_TBD_female_Gail_9_1_9_12_75_none_L.mp4'
+	#path = r'D:\new_num\gambusia_17_373_female_grace_9_1_9_12_75_none_L.mp4'
+	#path = r'D:\new_num\gambusia_18_TBD_female_Willow_9_1_9_12_75_none_R.mp4'
+	#path = r'D:\new_num\gambusia_17_234_male_gregory_9_1_9_12_75_none_L.mp4'
+	#path = r'D:\new_num\gambusia_18_TBD_male_George_9_1_9_12_75_none_L.mp4'
+	#path = r'D:\new_num\gambusia_17_200_male_walter_9_1_8_12_67_none_R.mp4'
+	#path = r'D:\new_num\gambusia_18_TBD_female_Wendy_9_1_9_12_75_none_R.mp4'
+	#path = r'D:\new_num\gambusia_18_TBD_male_Wheatley_9_1_9_12_75_none_R.mp4'
+	#path = r'D:\new_num\gambusia_18_TBD_male_Gary_9_1_9_12_75_none_L.mp4'
 	
 	print 'Video file: ' + str(path)
 	print 'Config file (json): ' + str(args['config_file'])
@@ -308,7 +318,7 @@ if __name__ == '__main__':
 	FEED_DELAY = 10+2 # secs
 	FEED_DURATION = 220-2 # secs
 	TOTAL_TIME = 245 # secs
-	SCREEN_DELAY_SECS = 30
+	SCREEN_DELAY = 30
 	NUM_FRAMES_FOR_BACKGROUND = 1000
 	PRE_SCREEN_EDGE_BUFFER_X = 175 #pixels
 	PRE_SCREEN_EDGE_BUFFER_Y = 175 #pixels
@@ -484,6 +494,7 @@ if __name__ == '__main__':
 	csv_filename = 'numerosity_log.csv'
 	freeze_log = 'num_freeze_log.csv'
 	tracker_log = 'num_tracker_log.csv'
+	#zone_log = 'zone_log.csv'
 
 	counter = 0
 	faux_counter = 0
@@ -757,8 +768,8 @@ if __name__ == '__main__':
 			#cv2.imshow('thresh',thresh)
 			cv2.imshow('thresh', cv2.resize(thresh, (0,0), fx=0.5, fy=0.5))
 
-		#unified = merge_contours(frame)
-		unified = None
+		unified = merge_contours(frame)
+		#unified = None
 		center = find_fish(thresh, vidWidth*vidHeight, unified, FISH_AREA_MIN_PIXELS, FISH_AREA_MAX_PIXELS, FISH_HEIGHT_MIN_PIXELS, FISH_HEIGHT_MAX_PIXELS)
 		#center = None
 		#print 'Center: ' + str(center) + '\n'
@@ -798,22 +809,22 @@ if __name__ == '__main__':
 					frames_since_last_track.append(frames_not_tracking)
 
 			# shrink search window
-			#if center[1] - TRACKING_WINDOW_LEN < TANK_UPPER_LEFT_Y + EDGE_BUFFER_Y:
-			#	new_upper_bound = TANK_UPPER_LEFT_Y + EDGE_BUFFER_Y
-			#else:
-			#	new_upper_bound = center[1] - TRACKING_WINDOW_LEN
-			#if center[1] + TRACKING_WINDOW_LEN > TANK_LOWER_LEFT_Y - EDGE_BUFFER_Y:
-			#	new_lower_bound = TANK_LOWER_LEFT_Y - EDGE_BUFFER_Y
-			#else:
-			#	new_lower_bound = center[1] + TRACKING_WINDOW_LEN
-			#if center[0] - TRACKING_WINDOW_LEN < TANK_UPPER_LEFT_X + EDGE_BUFFER_X:
-			#	new_left_bound  = TANK_UPPER_LEFT_X + EDGE_BUFFER_X
-			#else:
-			#	new_left_bound  = center[0] - TRACKING_WINDOW_LEN
-			#if center[0] + TRACKING_WINDOW_LEN > TANK_UPPER_RIGHT_X - EDGE_BUFFER_X:
-			#	new_right_bound = TANK_UPPER_RIGHT_X - EDGE_BUFFER_X
-			#else:
-			#	new_right_bound = center[0] + TRACKING_WINDOW_LEN
+			if center[1] - TRACKING_WINDOW_LEN < TANK_UPPER_LEFT_Y + EDGE_BUFFER_Y:
+				new_upper_bound = TANK_UPPER_LEFT_Y + EDGE_BUFFER_Y
+			else:
+				new_upper_bound = center[1] - TRACKING_WINDOW_LEN
+			if center[1] + TRACKING_WINDOW_LEN > TANK_LOWER_LEFT_Y - EDGE_BUFFER_Y:
+				new_lower_bound = TANK_LOWER_LEFT_Y - EDGE_BUFFER_Y
+			else:
+				new_lower_bound = center[1] + TRACKING_WINDOW_LEN
+			if center[0] - TRACKING_WINDOW_LEN < TANK_UPPER_LEFT_X + EDGE_BUFFER_X:
+				new_left_bound  = TANK_UPPER_LEFT_X + EDGE_BUFFER_X
+			else:
+				new_left_bound  = center[0] - TRACKING_WINDOW_LEN
+			if center[0] + TRACKING_WINDOW_LEN > TANK_UPPER_RIGHT_X - EDGE_BUFFER_X:
+				new_right_bound = TANK_UPPER_RIGHT_X - EDGE_BUFFER_X
+			else:
+				new_right_bound = center[0] + TRACKING_WINDOW_LEN
 			#print 'new_lower_bound=' + str(new_lower_bound)
 			#print 'new_upper_bound=' + str(new_upper_bound)
 			#print 'new_left_bound='  + str(new_left_bound)
@@ -861,6 +872,10 @@ if __name__ == '__main__':
 
 			# check if fish is in left target
 			if center[0] < left_target_x:
+				#if not in_left_target:
+				#	with open(zone_log, 'a') as f:
+				#		writer = csv.writer(f)
+				#		writer.writerow(('left_target','{:.2f}'.format(counter*spf)))			
 				left_target_frame_cnt += (frames_not_tracking + 1)
 				in_left_target = True
 				if not first_target_zone_entered:
@@ -871,6 +886,10 @@ if __name__ == '__main__':
 
 			# check if fish is in right target
 			if center[0] > right_target_x:
+				#if not in_right_target:
+				#	with open(zone_log, 'a') as f:
+				#		writer = csv.writer(f)
+				#		writer.writerow(('right_target','{:.2f}'.format(counter*spf)))		
 				right_target_frame_cnt += (frames_not_tracking + 1)
 				in_right_target = True
 				if not first_target_zone_entered:
@@ -889,6 +908,10 @@ if __name__ == '__main__':
 
 			# check if in upper mirror zone
 			if center[0] > upper_mirror_x1 and center[0] < upper_mirror_x2 and center[1] < upper_mirror_y:
+				#if not in_upper_mirror:
+				#	with open(zone_log, 'a') as f:
+				#		writer = csv.writer(f)
+				#		writer.writerow(('upper_mirror','{:.2f}'.format(counter*spf)))
 				upper_mirror_frame_cnt += (frames_not_tracking + 1)
 				in_upper_mirror = True
 			else:
@@ -896,6 +919,10 @@ if __name__ == '__main__':
 
 			# check if in lower mirror zone
 			if center[0] > lower_mirror_x1 and center[0] < lower_mirror_x2 and center[1] > lower_mirror_y:
+				#if not in_lower_mirror:
+				#	with open(zone_log, 'a') as f:
+				#		writer = csv.writer(f)
+				#		writer.writerow(('lower_mirror','{:.2f}'.format(counter*spf)))
 				lower_mirror_frame_cnt += (frames_not_tracking + 1)
 				in_lower_mirror = True
 			else:
@@ -903,6 +930,10 @@ if __name__ == '__main__':
 
 			# check if in upper left thigmotaxis zone
 			if center[0] > thigmo_ul_x1 and center[0] < thigmo_ul_x2 and center[1] < thigmo_upper_y:
+				#if not in_ul_thigmo:
+				#	with open(zone_log, 'a') as f:
+				#		writer = csv.writer(f)
+				#		writer.writerow(('ul_thigmo','{:.2f}'.format(counter*spf)))
 				ul_thigmo_frame_cnt += (frames_not_tracking + 1)
 				in_ul_thigmo = True
 			else:
@@ -910,6 +941,10 @@ if __name__ == '__main__':
 
 			# check if in upper right thigmotaxis zone
 			if center[0] > thigmo_ur_x1 and center[0] < thigmo_ur_x2 and center[1] < thigmo_upper_y:
+				#if not in_ur_thigmo:
+				#	with open(zone_log, 'a') as f:
+				#		writer = csv.writer(f)
+				#		writer.writerow(('ur_thigmo','{:.2f}'.format(counter*spf)))
 				ur_thigmo_frame_cnt += (frames_not_tracking + 1)
 				in_ur_thigmo = True
 			else:
@@ -917,6 +952,10 @@ if __name__ == '__main__':
 
 			# check if in lower left thigmotaxis zone
 			if center[0] > thigmo_ll_x1 and center[0] < thigmo_ll_x2 and center[1] > thigmo_lower_y:
+				#if not in_ll_thigmo:
+				#	with open(zone_log, 'a') as f:
+				#		writer = csv.writer(f)
+				#		writer.writerow(('ll_thigmo','{:.2f}'.format(counter*spf)))
 				ll_thigmo_frame_cnt += (frames_not_tracking + 1)
 				in_ll_thigmo = True
 			else:
@@ -924,6 +963,10 @@ if __name__ == '__main__':
 
 			# check if in lower right thigmotaxis zone
 			if center[0] > thigmo_lr_x1 and center[0] < thigmo_lr_x2 and center[1] > thigmo_lower_y:
+				#if not in_ur_thigmo:
+				#	with open(zone_log, 'a') as f:
+				#		writer = csv.writer(f)
+				#		writer.writerow(('ur_thigmo','{:.2f}'.format(counter*spf)))
 				lr_thigmo_frame_cnt += (frames_not_tracking + 1)
 				in_lr_thigmo = True
 			else:
@@ -931,30 +974,50 @@ if __name__ == '__main__':
 
 			# check if fish is in corners (may use for thigmotaxis score)
 			if center[0] < thigmo_ul_x1 and center[1] < thigmo_upper_y:
+				#if not in_ul_corner:
+				#	with open(zone_log, 'a') as f:
+				#		writer = csv.writer(f)
+				#		writer.writerow(('ul_corner','{:.2f}'.format(counter*spf)))		
 				ul_corner_frame_cnt += (frames_not_tracking + 1)
 				in_ul_corner = True
 			else:
 				in_ul_corner = False
 
 			if center[0] < thigmo_ll_x1 and center[1] > thigmo_lower_y:
+				#if not in_ll_corner:
+				#	with open(zone_log, 'a') as f:
+				#		writer = csv.writer(f)
+				#		writer.writerow(('ll_corner','{:.2f}'.format(counter*spf)))		
 				ll_corner_frame_cnt += (frames_not_tracking + 1)
 				in_ll_corner = True
 			else:
 				in_ll_corner = False
 
 			if center[0] > thigmo_ur_x2 and center[1] < thigmo_upper_y:
+				#if not in_ur_corner:
+				#	with open(zone_log, 'a') as f:
+				#		writer = csv.writer(f)
+				#		writer.writerow(('ur_corner','{:.2f}'.format(counter*spf)))		
 				ur_corner_frame_cnt += (frames_not_tracking + 1)
 				in_ur_corner = True
 			else:
 				in_ur_corner = False
 
 			if center[0] > thigmo_lr_x2 and center[1] > thigmo_lower_y:
+				#if not in_lr_corner:
+				#	with open(zone_log, 'a') as f:
+				#		writer = csv.writer(f)
+				#		writer.writerow(('lr_corner','{:.2f}'.format(counter*spf)))		
 				lr_corner_frame_cnt += (frames_not_tracking + 1)
 				in_lr_corner = True
 			else:
 				in_lr_corner = False
 
 			if not in_left_target and not in_right_target and not in_ll_corner and not in_lr_corner and not in_ul_corner and not in_ur_corner and not in_ll_thigmo and not in_lr_thigmo and not in_ul_thigmo and not in_ur_thigmo and not in_lower_mirror and not in_upper_mirror:
+				#if not in_center:
+				#	with open(zone_log, 'a') as f:
+				#		writer = csv.writer(f)
+				#		writer.writerow(('center','{:.2f}'.format(counter*spf)))	
 				in_center = True
 				center_frame_cnt += (frames_not_tracking + 1)
 				
@@ -1054,9 +1117,14 @@ if __name__ == '__main__':
 			if acquired:
 				potential_freeze_frames += 1
 
-		# draw box around track window
-		cv2.rectangle(frame,(new_left_bound, new_lower_bound), (new_right_bound, new_upper_bound), (255,255,255),2)
-
+		# draw white box around search/track window
+		if faux_counter < (SCREEN_DELAY*fps):
+			cv2.rectangle(frame,(TANK_UPPER_LEFT_X+PRE_SCREEN_EDGE_BUFFER_X, TANK_LOWER_LEFT_Y-PRE_SCREEN_EDGE_BUFFER_Y), (TANK_UPPER_RIGHT_X-PRE_SCREEN_EDGE_BUFFER_X, TANK_UPPER_LEFT_Y+PRE_SCREEN_EDGE_BUFFER_Y), (255,255,255),2)
+		elif not tracking:
+			cv2.rectangle(frame,(TANK_UPPER_LEFT_X+EDGE_BUFFER_X, TANK_LOWER_LEFT_Y-EDGE_BUFFER_Y), (TANK_UPPER_RIGHT_X-EDGE_BUFFER_X, TANK_UPPER_LEFT_Y+EDGE_BUFFER_Y), (255,255,255),2)
+		else:
+			cv2.rectangle(frame,(new_left_bound, new_lower_bound), (new_right_bound, new_upper_bound), (255,255,255),2)	
+		
 		# draw green circle around freeze center
 		if freeze_start is not None:
 			cv2.circle(frame,freeze_start,FREEZE_WINDOW_LEN,[0,255,0],2)
