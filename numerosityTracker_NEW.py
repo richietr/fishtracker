@@ -5,7 +5,6 @@ import time
 import math
 import os
 import csv
-#import matplotlib.pyplot as plt
 import json
 import types
 import argparse
@@ -57,6 +56,31 @@ def apply_special_mask(frame, corner_x1, corner_x2, corner_y1, corner_y2, target
 	mask[corner_y3:corner_y4,corner_x1:corner_x2] = frame[corner_y3:corner_y4,corner_x1:corner_x2]
 
 	return mask
+
+def apply_test_mask(frame, mirror_x1, mirror_x2, upper_mirror_y2, lower_mirror_y1, left_screen_x2, right_screen_x1, screen_y1, screen_y2, vidHeight, vidWidth):
+
+	# initialize mask to all 0s
+	#mask = np.zeros((vidHeight, vidWidth, 3),np.uint8)
+	
+	zeros = np.zeros((vidHeight, vidWidth, 3),np.uint8)
+
+	# use rectangle bounds for masking
+	# upper mirror
+	frame[0:upper_mirror_y2,mirror_x1:mirror_x2] = zeros[0:upper_mirror_y2,mirror_x1:mirror_x2]
+	# lower mirror
+	frame[lower_mirror_y1:vidHeight-1,mirror_x1:mirror_x2] = zeros[lower_mirror_y1:vidHeight-1,mirror_x1:mirror_x2]
+	# left screen
+	frame[screen_y1:screen_y2,0:left_screen_x2] = zeros[screen_y1:screen_y2,0:left_screen_x2]
+	# right screen
+	frame[screen_y1:screen_y2,right_screen_x1:vidWidth-1] = zeros[screen_y1:screen_y2,right_screen_x1:vidWidth-1]
+	
+	#edges
+	frame[0:20,0:vidWidth-1] = zeros[0:20,0:vidWidth-1]
+	frame[0:vidHeight-1,0:20] = zeros[0:vidHeight-1,0:20]
+	frame[vidHeight-21:vidHeight-1,0:vidWidth-1] = zeros[vidHeight-21:vidHeight-1,0:vidWidth-1]
+	frame[0:vidHeight-1,vidWidth-21:vidWidth-1] = zeros[0:vidHeight-1,vidWidth-21:vidWidth-1]
+	
+	return frame
 
 # blurs a frame and crops based on boundaries
 def blur_and_mask(frame, lower_bound, upper_bound, left_bound, right_bound, vidHeight, vidWidth):
@@ -120,8 +144,6 @@ def merge_contours(frame, thresh):
 # returns center of fish
 def find_fish(frame,totalVideoPixels, unified, min_area_pixels, max_area_pixels, min_height_pixels, max_height_pixels):
 
-	global cant_decide
-
 	# find all contours in the frame
 	contours = cv2.findContours(frame,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
 	#print 'number of contours: ' + str(len(contours[0]))
@@ -142,19 +164,22 @@ def find_fish(frame,totalVideoPixels, unified, min_area_pixels, max_area_pixels,
 
 		potential_tracks = []
 		for area in area_list:
-			if area < max_area_pixels*1.0 and area > min_area_pixels*1.0 and max(h,w) < max_height_pixels and max(h,w) > min_height_pixels:
+			#if area < max_area_pixels*1.0 and area > min_area_pixels*1.0 and max(h,w) < max_height_pixels and max(h,w) > min_height_pixels:
+			if area < max_area_pixels*1.0 and area > min_area_pixels*1.0:
 				idx = area_list.index(area)
 				potential_tracks.append(contours[idx])
 			#else:
 				#print 'Area=' + str(area) + ', MaxH=' + str(max(h,w))
+				#print 'Area=' + str(area)
 
 
 		#print 'Number of potential tracks: ' + str(len(potential_tracks)) + ' of ' + str(len(area_list))
 
 		if len(potential_tracks) > 1 or len(potential_tracks) == 0:
-			cant_decide += 1
 			return None
 		else:
+			
+			#print 'Area=' + str(area) + ', MaxH=' + str(max(h,w))
 
 			largestCon = area_list.index(max(area_list))
 
@@ -249,10 +274,7 @@ def get_background_image(vid,numFrames,length, NUM_FRAMES_TO_SKIP, NUM_FRAMES_TO
 
 class Tracker:
 
-	global cant_decide
-	cant_decide = 0
-
-	def __init__(self, vid_file, config_file, show_images):
+	def __init__(self, vid_file, config_file, fish_json, grid_json, show_images):
 
 		self.vid_file = vid_file
 		self.config_file = config_file
@@ -260,15 +282,129 @@ class Tracker:
 
 		print 'Video file: ' + str(vid_file)
 		print 'Config file (json): ' + str(config_file)
+		print 'Fish json: ' + str(fish_json)
+		print 'Grid json: ' + str(grid_json)
 
 		if show_images:
 			print 'Showing images!'
 		else:
 			print 'NOT showing images!'
+			
+		self.line6 = None
+		self.line7 = None
+		self.line9 = None
+		self.line10 = None
+		self.line11 = None
+		self.line12 = None
+
+		# Get fish name from video file
+		path_strip = os.path.splitext(vid_file)[0]
+		path_parts = path_strip.split('\\')
+		filename = path_parts[len(path_parts)-1]
+		filename_parts = filename.split('_')
+		fish = filename_parts[4]
+		
+		self.set_grid_lines(self, fish, fish_json, grid_json)
+	
+	@staticmethod
+	def set_grid_lines(self, fish, fish_json_filename, grid_json_filename):
+		
+		fish_json = parse_json(fish_json_filename)
+		if fish_json is not None:
+			if fish in fish_json:
+				tmp_dict = fish_json[fish]
+				if 'cam_node' in tmp_dict:
+					pie = tmp_dict['cam_node']
+				else:
+					print 'ERROR> cam_node not specified in ' + fish_json_filename + ' for ' + fish_json
+					print 'Exiting...'
+					sys.exit(1)
+			else:
+				print 'ERROR> ' + fish + ' is not in ' + fish_json_filename
+				print 'Exiting...'
+				sys.exit(1)
+		else:
+			print 'ERROR> ' + fish_json_filename + ' is None'
+			print 'Exiting...'
+			sys.exit(1)
+		
+		grid_json = parse_json(grid_json_filename)
+		if grid_json is not None:
+			if pie in grid_json:
+				tmp_dict = grid_json[pie]
+				if "line6" in tmp_dict:
+					self.line6 = eval(tmp_dict["line6"])
+				else:
+					print 'ERROR> line6 is not defined in ' + grid_json_filename + ' for '+ pie
+					print 'Exiting...'
+					sys.exit(1)
+				if "line7" in tmp_dict:
+					self.line7 = eval(tmp_dict["line7"])
+				else:
+					print 'ERROR> line7 is not defined in ' + grid_json_filename + ' for '+ pie
+					print 'Exiting...'
+					sys.exit(1)
+				if "line9" in tmp_dict:
+					self.line9 = eval(tmp_dict["line9"])
+				else:
+					print 'ERROR> line9 is not defined in ' + grid_json_filename + ' for '+ pie
+					print 'Exiting...'
+					sys.exit(1)
+				if "line10" in tmp_dict:
+					self.line10 = eval(tmp_dict["line10"])
+				else:
+					print 'ERROR> line10 is not defined in ' + grid_json_filename + ' for '+ pie
+					print 'Exiting...'
+					sys.exit(1)
+				if "line11" in tmp_dict:
+					self.line11 = eval(tmp_dict["line11"])
+				else:
+					print 'ERROR> line11 is not defined in ' + grid_json_filename + ' for '+ pie
+					print 'Exiting...'
+					sys.exit(1)
+				if "line12" in tmp_dict:
+					self.line12 = eval(tmp_dict["line12"])
+				else:
+					print 'ERROR> line12 is not defined in ' + grid_json_filename + ' for '+ pie
+					print 'Exiting...'
+					sys.exit(1)
+					
+			else:
+				print 'ERROR> ' + pie + ' is not in ' + grid_json_filename
+				print 'Exiting...'
+				sys.exit(1)
+		else:
+			print 'ERROR> ' + grid_json_filename + ' is None'
+			print 'Exiting...'
+			sys.exit(1)
+			
+		
 
 
 	def run_numerosity_tracker(self):
 
+		#line1 =[(66,231),(1218,231)]
+		#line2 =[(66,292),(1218,292)]
+		#line3 =[(66,734),(1218,724)]
+		#line4 =[(66,793),(1218,783)]
+		#line5 =[(66,231),(66,793)]
+		#line6 =[(365,292),(365,732)]
+		#line7 =[(903,292),(903,728)]
+		#line8 =[(1218,231),(1218,783)]
+		#line9 =[(557,730),(557,789)]
+		#line10 =[(709,730),(709,789)]
+		#line11 =[(557,231),(557,292)]
+		#line12 =[(718,231),(718,292)]
+		
+		print 'line6: ' + str(self.line6)
+		print 'line7: ' + str(self.line7)
+		print 'line9: ' + str(self.line9)
+		print 'line10: ' + str(self.line10)
+		print 'line11: ' + str(self.line11)
+		print 'line12: ' + str(self.line12)
+		
+		
+		
 		print time.strftime('%X %x %Z')
 		start_time = time.time()
 
@@ -315,8 +451,8 @@ class Tracker:
 		CROP_X2 = 1296
 		CROP_Y1 = 0
 		CROP_Y2 = 972
-		TANK_LENGTH_CM = 40.0 #40.64
-		TANK_WIDTH_CM = 20.0 #21.59
+		#TANK_LENGTH_CM = 40.0 #40.64
+		#TANK_WIDTH_CM = 20.0 #21.59
 		TANK_UPPER_LEFT_X = 0
 		TANK_UPPER_LEFT_Y = 0
 		TANK_LOWER_LEFT_X = 0
@@ -325,12 +461,12 @@ class Tracker:
 		TANK_UPPER_RIGHT_Y = 0
 		TANK_LOWER_RIGHT_X = 1296
 		TANK_LOWER_RIGHT_Y = 972
-		MIRROR_LENGTH_CM = 5.08 # 2"
-		MIRROR_ZONE_WIDTH_CM = 3
+		#MIRROR_LENGTH_CM = 5.08 # 2"
+		#MIRROR_ZONE_WIDTH_CM = 3
 		TRACKING_WINDOW_LEN = 100 # TODO: Use cm instead of pixels
-		TARGET_ZONE_CM = 11
-		HIGH_STIMULUS_LETTER = 'I'
-		LOW_STIMULUS_LETTER = 'O'
+		#TARGET_ZONE_CM = 11
+		HIGH_STIMULUS_LETTER = ['I']
+		LOW_STIMULUS_LETTER = ['O']
 		FREEZE_TIME_MIN_SECS = 3 # freeze must be 3 secs
 		FREEZE_WINDOW_LEN = 40 # TODO: Use cm instead of pixels
 
@@ -378,18 +514,18 @@ class Tracker:
 				CROP_Y1 = int(config_json['CROP_Y1'])
 			if 'CROP_Y2' in config_json:
 				CROP_Y2 = int(config_json['CROP_Y2'])
-			if 'TANK_LENGTH_CM' in config_json:
-				TANK_LENGTH_CM = float(config_json['TANK_LENGTH_CM'])
-			if 'TANK_WIDTH_CM' in config_json:
-				TANK_WIDTH_CM = float(config_json['TANK_WIDTH_CM'])
-			if 'MIRROR_LENGTH_CM' in config_json:
-				MIRROR_LENGTH_CM = float(config_json['MIRROR_LENGTH_CM'])
-			if 'MIRROR_ZONE_WIDTH_CM' in config_json:
-				MIRROR_ZONE_WIDTH_CM = int(config_json['MIRROR_ZONE_WIDTH_CM'])
+			#if 'TANK_LENGTH_CM' in config_json:
+			#	TANK_LENGTH_CM = float(config_json['TANK_LENGTH_CM'])
+			#if 'TANK_WIDTH_CM' in config_json:
+			#	TANK_WIDTH_CM = float(config_json['TANK_WIDTH_CM'])
+			#if 'MIRROR_LENGTH_CM' in config_json:
+			#	MIRROR_LENGTH_CM = float(config_json['MIRROR_LENGTH_CM'])
+			#if 'MIRROR_ZONE_WIDTH_CM' in config_json:
+			#	MIRROR_ZONE_WIDTH_CM = int(config_json['MIRROR_ZONE_WIDTH_CM'])
 			if 'TRACKING_WINDOW_LEN_PIXELS' in config_json:
 				TRACKING_WINDOW_LEN = int(config_json['TRACKING_WINDOW_LEN_PIXELS'])
-			if 'TARGET_ZONE_CM' in config_json:
-				TARGET_ZONE_CM = int(config_json['TARGET_ZONE_CM'])
+			#if 'TARGET_ZONE_CM' in config_json:
+			#	TARGET_ZONE_CM = int(config_json['TARGET_ZONE_CM'])
 			if 'HIGH_STIMULUS_LETTER' in config_json:
 				HIGH_STIMULUS_LETTER = config_json['HIGH_STIMULUS_LETTER']
 			if 'LOW_STIMULUS_LETTER' in config_json:
@@ -438,13 +574,13 @@ class Tracker:
 		print 'CROP_X2=' + str(CROP_X2)
 		print 'CROP_Y1=' + str(CROP_Y1)
 		print 'CROP_Y2=' + str(CROP_Y2)
-		print 'TANK_LENGTH_CM=' + str(TANK_LENGTH_CM)
-		print 'TANK_WIDTH_CM=' + str(TANK_WIDTH_CM)
-		print 'MIRROR_LENGTH_CM=' + str(MIRROR_LENGTH_CM)
-		print 'MIRROR_ZONE_WIDTH_CM=' + str(MIRROR_ZONE_WIDTH_CM)
+		#print 'TANK_LENGTH_CM=' + str(TANK_LENGTH_CM)
+		#print 'TANK_WIDTH_CM=' + str(TANK_WIDTH_CM)
+		#print 'MIRROR_LENGTH_CM=' + str(MIRROR_LENGTH_CM)
+		#print 'MIRROR_ZONE_WIDTH_CM=' + str(MIRROR_ZONE_WIDTH_CM)
 		print 'FREEZE_CIRCLE_DIAMETER_PIXELS=' + str(FREEZE_WINDOW_LEN)
 		print 'TRACKING_WINDOW_LEN_PIXELS=' + str(TRACKING_WINDOW_LEN)
-		print 'TARGET_ZONE_CM=' + str(TARGET_ZONE_CM)
+		#print 'TARGET_ZONE_CM=' + str(TARGET_ZONE_CM)
 		print 'HIGH_STIMULUS_LETTER=' + str(HIGH_STIMULUS_LETTER)
 		print 'LOW_STIMULUS_LETTER=' + str(LOW_STIMULUS_LETTER)
 		print 'FREEZE_TIME_MIN_SECS=' + str(FREEZE_TIME_MIN_SECS)
@@ -481,7 +617,6 @@ class Tracker:
 		csv_filename = 'numerosity_log.csv'
 		freeze_log = 'num_freeze_log.csv'
 		tracker_log = 'num_tracker_log.csv'
-		#zone_log = 'zone_log.csv'
 
 		counter = 0
 		faux_counter = 0
@@ -570,19 +705,19 @@ class Tracker:
 			trial_type = 'reinforce'
 
 		# determine if fish was trained to high or low
-		if fishid.startswith(HIGH_STIMULUS_LETTER):
-			print 'Fish was trained to high stimulus!'
-			trained_high = True
-			trained_low  = False
-		elif fishid.startswith(LOW_STIMULUS_LETTER):
-			print 'Fish was trained to low stimulus!'
-			trained_high = False
-			trained_low  = True
-		else:
+		for ledda in HIGH_STIMULUS_LETTER:
+			if fishid.startswith(ledda):
+				print 'Fish was trained to high stimulus!'
+				trained_high = True
+				trained_low  = False
+		for ledda in LOW_STIMULUS_LETTER:
+			if fishid.startswith(LOW_STIMULUS_LETTER):
+				print 'Fish was trained to low stimulus!'
+				trained_high = False
+				trained_low  = True
+		if trained_high is False and trained_low is False:
 			print 'ERROR> Unable to determine if fish was trained to high or low stimulus'
-			print 'Fish ID should start with either ' + HIGH_STIMULUS_LETTER + ' or ' + LOW_STIMULUS_LETTER
-			trained_high = False
-			trained_low  = False
+			print 'Fish ID should start with either ' + str(HIGH_STIMULUS_LETTER) + ' or ' + str(LOW_STIMULUS_LETTER)
 
 		# determine if stimulus is high or low
 		if stimulus.isdigit() and that_stimulus.isdigit():
@@ -605,11 +740,11 @@ class Tracker:
 			rightside_high = False
 
 		# length of a pixel (assuming square)
-		pixel_cm_len = TANK_LENGTH_CM/(TANK_UPPER_RIGHT_X-TANK_UPPER_LEFT_X)
+		#pixel_cm_len = TANK_LENGTH_CM/(TANK_UPPER_RIGHT_X-TANK_UPPER_LEFT_X)
 		#print pixel_cm_len
-		pixel_cm_wid = TANK_WIDTH_CM/(TANK_LOWER_LEFT_Y-TANK_UPPER_RIGHT_Y)
+		#pixel_cm_wid = TANK_WIDTH_CM/(TANK_LOWER_LEFT_Y-TANK_UPPER_RIGHT_Y)
 		#print pixel_cm_wid
-		pixel_cm = (pixel_cm_len+pixel_cm_wid)/2
+		#pixel_cm = (pixel_cm_len+pixel_cm_wid)/2
 		#print pixel_cm
 
 		# cropping window
@@ -617,35 +752,59 @@ class Tracker:
 		new_upper_bound, new_left_bound, new_right_bound, new_lower_bound = CROP_Y2, CROP_X1, CROP_X2, CROP_Y1
 
 		# target boxes
-		left_target_x = int(TANK_UPPER_LEFT_X + (TARGET_ZONE_CM * (1/pixel_cm)))
-		right_target_x = int(TANK_UPPER_RIGHT_X - (TARGET_ZONE_CM * (1/pixel_cm)))
+		#left_target_x = int(TANK_UPPER_LEFT_X + (TARGET_ZONE_CM * (1/pixel_cm)))
+		#right_target_x = int(TANK_UPPER_RIGHT_X - (TARGET_ZONE_CM * (1/pixel_cm)))
+		left_target_x = self.line6[0][0]
+		left_target_y1 = self.line6[0][1]
+		left_target_y2 = self.line6[1][1]
+		right_target_x = self.line7[0][0]
+		right_target_y1 = self.line7[0][1]
+		right_target_y2 = self.line7[1][1]
 
 		# target center point
-		left_target_center_x = ((left_target_x-TANK_LOWER_LEFT_X)/2) + TANK_LOWER_LEFT_X
-		target_center_y = ((TANK_LOWER_LEFT_Y-TANK_UPPER_LEFT_Y/2)) + TANK_UPPER_LEFT_Y
-		right_target_center_x = ((right_target_x-TANK_LOWER_RIGHT_X)/2) + TANK_LOWER_RIGHT_X
+		#left_target_center_x = ((left_target_x-TANK_LOWER_LEFT_X)/2) + TANK_LOWER_LEFT_X
+		#target_center_y = ((TANK_LOWER_LEFT_Y-TANK_UPPER_LEFT_Y/2)) + TANK_UPPER_LEFT_Y
+		#right_target_center_x = ((right_target_x-TANK_LOWER_RIGHT_X)/2) + TANK_LOWER_RIGHT_X
 
 		# mirror boxes
-		upper_mirror_x1 = int((((TANK_UPPER_RIGHT_X-TANK_UPPER_LEFT_X)/2.0)+TANK_UPPER_LEFT_X) - ((MIRROR_LENGTH_CM/2.0) * (1/pixel_cm)))
-		upper_mirror_x2 = int((((TANK_UPPER_RIGHT_X-TANK_UPPER_LEFT_X)/2.0)+TANK_UPPER_LEFT_X) + ((MIRROR_LENGTH_CM/2.0) * (1/pixel_cm)))
-		upper_mirror_y = int(TANK_UPPER_LEFT_Y + (MIRROR_ZONE_WIDTH_CM * (1/pixel_cm)))
+		#upper_mirror_x1 = int((((TANK_UPPER_RIGHT_X-TANK_UPPER_LEFT_X)/2.0)+TANK_UPPER_LEFT_X) - ((MIRROR_LENGTH_CM/2.0) * (1/pixel_cm)))
+		#upper_mirror_x2 = int((((TANK_UPPER_RIGHT_X-TANK_UPPER_LEFT_X)/2.0)+TANK_UPPER_LEFT_X) + ((MIRROR_LENGTH_CM/2.0) * (1/pixel_cm)))
+		#upper_mirror_y = int(TANK_UPPER_LEFT_Y + (MIRROR_ZONE_WIDTH_CM * (1/pixel_cm)))
+		upper_mirror_x1 = self.line11[0][0]
+		upper_mirror_x2 = self.line12[0][0]
+		upper_mirror_y = self.line11[1][1]
 
-		lower_mirror_x1 = int((((TANK_LOWER_RIGHT_X-TANK_LOWER_LEFT_X)/2.0)+TANK_LOWER_LEFT_X) - ((MIRROR_LENGTH_CM/2.0) * (1/pixel_cm)))
-		lower_mirror_x2 = int((((TANK_LOWER_RIGHT_X-TANK_LOWER_LEFT_X)/2.0)+TANK_LOWER_LEFT_X) + ((MIRROR_LENGTH_CM/2.0) * (1/pixel_cm)))
-		lower_mirror_y = int(TANK_LOWER_LEFT_Y - (MIRROR_ZONE_WIDTH_CM * (1/pixel_cm)))
+
+		#lower_mirror_x1 = int((((TANK_LOWER_RIGHT_X-TANK_LOWER_LEFT_X)/2.0)+TANK_LOWER_LEFT_X) - ((MIRROR_LENGTH_CM/2.0) * (1/pixel_cm)))
+		#lower_mirror_x2 = int((((TANK_LOWER_RIGHT_X-TANK_LOWER_LEFT_X)/2.0)+TANK_LOWER_LEFT_X) + ((MIRROR_LENGTH_CM/2.0) * (1/pixel_cm)))
+		#lower_mirror_y = int(TANK_LOWER_LEFT_Y - (MIRROR_ZONE_WIDTH_CM * (1/pixel_cm)))
+		lower_mirror_x1 = self.line9[0][0]
+		lower_mirror_x2 = self.line10[0][0]
+		lower_mirror_y = self.line9[0][1]
 
 		# thigmotaxis boxes
-		thigmo_ul_x1 = left_target_x + 1
-		thigmo_ul_x2 = upper_mirror_x1 - 1
-		thigmo_ur_x1 = upper_mirror_x2 + 1
-		thigmo_ur_x2 = right_target_x - 1
-		thigmo_upper_y = upper_mirror_y
+		#thigmo_ul_x1 = left_target_x + 1
+		#thigmo_ul_x2 = upper_mirror_x1 - 1
+		#thigmo_ur_x1 = upper_mirror_x2 + 1
+		#thigmo_ur_x2 = right_target_x - 1
+		#thigmo_upper_y = upper_mirror_y
+		thigmo_ul_x1 = CROP_X1
+		thigmo_ul_x2 = self.line11[0][0]
+		thigmo_ur_x1 = self.line12[0][0]
+		thigmo_ur_x2 = CROP_X2
+		thigmo_upper_y = self.line11[1][1]
+		
 
-		thigmo_ll_x1 = left_target_x + 1
-		thigmo_ll_x2 = lower_mirror_x1 - 1
-		thigmo_lr_x1 = lower_mirror_x2 + 1
-		thigmo_lr_x2 = right_target_x - 1
-		thigmo_lower_y = lower_mirror_y
+		#thigmo_ll_x1 = left_target_x + 1
+		#thigmo_ll_x2 = lower_mirror_x1 - 1
+		#thigmo_lr_x1 = lower_mirror_x2 + 1
+		#thigmo_lr_x2 = right_target_x - 1
+		#thigmo_lower_y = lower_mirror_y
+		thigmo_ll_x1 = CROP_X1
+		thigmo_ll_x2 = self.line9[0][0]
+		thigmo_lr_x1 = self.line10[0][0]
+		thigmo_lr_x2 = CROP_X2
+		thigmo_lower_y = self.line9[0][1]
 
 		# open the video
 		#path = os.path.normpath(path)
@@ -737,12 +896,15 @@ class Tracker:
 			#	#difference = apply_mask(difference, TANK_UPPER_LEFT_Y+EDGE_BUFFER, TANK_LOWER_LEFT_Y-EDGE_BUFFER, left_target_x, right_target_x, vidHeight, vidWidth)
 			#	difference = apply_special_mask(difference, TANK_UPPER_LEFT_X+EDGE_BUFFER, TANK_UPPER_RIGHT_X-EDGE_BUFFER, TANK_UPPER_LEFT_Y+25, upper_mirror_y, left_target_x, right_target_x, lower_mirror_y, TANK_LOWER_LEFT_Y-25, vidHeight, vidWidth)
 			#elif not tracking:
-			if faux_counter < (SCREEN_DELAY*fps):
-				difference = apply_mask(difference, TANK_UPPER_LEFT_Y+PRE_SCREEN_EDGE_BUFFER_Y, TANK_LOWER_LEFT_Y-PRE_SCREEN_EDGE_BUFFER_Y, TANK_UPPER_LEFT_X+PRE_SCREEN_EDGE_BUFFER_X, TANK_UPPER_RIGHT_X-PRE_SCREEN_EDGE_BUFFER_X, vidHeight, vidWidth)
-			elif not tracking:
-				difference = apply_mask(difference, TANK_UPPER_LEFT_Y+EDGE_BUFFER_Y, TANK_LOWER_LEFT_Y-EDGE_BUFFER_Y, TANK_UPPER_LEFT_X+EDGE_BUFFER_X, TANK_UPPER_RIGHT_X-EDGE_BUFFER_X, vidHeight, vidWidth)
-			else:
-				difference = apply_mask(difference, new_lower_bound, new_upper_bound, new_left_bound, new_right_bound, vidHeight, vidWidth)
+			
+			
+			#if faux_counter < (SCREEN_DELAY*fps):
+			#	difference = apply_mask(difference, TANK_UPPER_LEFT_Y+PRE_SCREEN_EDGE_BUFFER_Y, TANK_LOWER_LEFT_Y-PRE_SCREEN_EDGE_BUFFER_Y, TANK_UPPER_LEFT_X+PRE_SCREEN_EDGE_BUFFER_X, TANK_UPPER_RIGHT_X-PRE_SCREEN_EDGE_BUFFER_X, vidHeight, vidWidth)
+			#elif not tracking:
+			#	difference = apply_mask(difference, TANK_UPPER_LEFT_Y+EDGE_BUFFER_Y, TANK_LOWER_LEFT_Y-EDGE_BUFFER_Y, TANK_UPPER_LEFT_X+EDGE_BUFFER_X, TANK_UPPER_RIGHT_X-EDGE_BUFFER_X, vidHeight, vidWidth)
+			#else:
+			#	difference = apply_mask(difference, new_lower_bound, new_upper_bound, new_left_bound, new_right_bound, vidHeight, vidWidth)
+			difference = apply_test_mask(difference, upper_mirror_x1, upper_mirror_x2, TANK_UPPER_LEFT_Y+20, TANK_LOWER_LEFT_Y-20, TANK_UPPER_LEFT_X+20, TANK_UPPER_RIGHT_X-20, TANK_UPPER_LEFT_Y, TANK_LOWER_LEFT_Y, vidHeight, vidWidth)
 
 			# find the centroid of the largest blob
 			imdiff = cv2.cvtColor(difference, cv2.COLOR_BGR2GRAY)
@@ -755,8 +917,8 @@ class Tracker:
 				#cv2.imshow('thresh',thresh)
 				cv2.imshow('thresh', cv2.resize(thresh, (0,0), fx=0.5, fy=0.5))
 
-			unified = merge_contours(frame, thresh)
-			#unified = None
+			#unified = merge_contours(frame, thresh)
+			unified = None
 			center = find_fish(thresh, vidWidth*vidHeight, unified, FISH_AREA_MIN_PIXELS, FISH_AREA_MAX_PIXELS, FISH_HEIGHT_MIN_PIXELS, FISH_HEIGHT_MAX_PIXELS)
 			#center = None
 			#print 'Center: ' + str(center) + '\n'
@@ -765,28 +927,40 @@ class Tracker:
 			if not first_pass:
 				if center is not None and prev_center is not None:
 					# distance between points in pixels times cm in a single pixel
-					activity_level += (true_distance(prev_center, center))*pixel_cm
+					#activity_level += (true_distance(prev_center, center))*pixel_cm
+					
+					# this is just accumulating pixels traveled
+					activity_level += (true_distance(prev_center, center))
 
 			if center is not None:
 
 				prev_center = center
 
 				if not acquired:
+					
+					print 'Frames before acquisition: ' + str(frames_b4_acq)
+					
 					acquired = True
-					dist_left = true_distance([left_target_center_x, target_center_y], center)
-					dist_right = true_distance([right_target_center_x, target_center_y], center)
-					if dist_left > dist_right:
-						#right_target_frame_cnt += frames_b4_acq
-						right_target_entries = 1 #should this be counted
-						#print 'Counting first ' + str(frames_b4_acq) + ' frames to the right target zone'
-						first_target_zone = 'right'
-						first_target_zone_entered = True
-					else:
-						#left_target_frame_cnt += frames_b4_acq
-						left_target_entries = 1 #should this be counted
-						#print 'Counting first ' + str(frames_b4_acq) + ' frames to the left target zone'
-						first_target_zone = 'left'
-						first_target_zone_entered = True
+					
+					# Thinking this is no longer issue for testing trials since
+					# the diff should be pretty clear even on first frame
+					if frames_b4_acq > 3.0*fps:							
+						#dist_left = true_distance([left_target_center_x, target_center_y], center)
+						#dist_right = true_distance([right_target_center_x, target_center_y], center)
+						dist_left = 1
+						dist_right = 0
+						if dist_left > dist_right:
+							#right_target_frame_cnt += frames_b4_acq
+							right_target_entries = 1 #should this be counted
+							#print 'Counting first ' + str(frames_b4_acq) + ' frames to the right target zone'
+							first_target_zone = 'right'
+							first_target_zone_entered = True
+						else:
+							#left_target_frame_cnt += frames_b4_acq
+							left_target_entries = 1 #should this be counted
+							#print 'Counting first ' + str(frames_b4_acq) + ' frames to the left target zone'
+							first_target_zone = 'left'
+							first_target_zone_entered = True
 
 				if not tracking:
 					tracking = True
@@ -828,14 +1002,14 @@ class Tracker:
 					upper_mirror_frame_cnt += (frames_not_tracking/2)
 				elif in_upper_mirror:
 					upper_mirror_frame_cnt += (frames_not_tracking/2)
-				elif in_ul_corner:
-					ul_corner_frame_cnt += (frames_not_tracking/2)
-				elif in_ll_corner:
-					ll_corner_frame_cnt += (frames_not_tracking/2)
-				elif in_ur_corner:
-					ur_corner_frame_cnt += (frames_not_tracking/2)
-				elif in_lr_corner:
-					lr_corner_frame_cnt += (frames_not_tracking/2)
+				#elif in_ul_corner:
+				#	ul_corner_frame_cnt += (frames_not_tracking/2)
+				#elif in_ll_corner:
+				#	ll_corner_frame_cnt += (frames_not_tracking/2)
+				#elif in_ur_corner:
+				#	ur_corner_frame_cnt += (frames_not_tracking/2)
+				#elif in_lr_corner:
+				#	lr_corner_frame_cnt += (frames_not_tracking/2)
 				elif in_ul_thigmo:
 					ul_thigmo_frame_cnt += (frames_not_tracking/2)
 				elif in_ll_thigmo:
@@ -848,21 +1022,16 @@ class Tracker:
 					center_frame_cnt += (frames_not_tracking/2)
 
 				frames_not_tracking = frames_not_tracking/2
-
-				# check if left target zone entry occurred
-				if not in_left_target and center[0] < left_target_x:
-					left_target_entries += 1
-
-				# check if right target zone entry occurred
-				if not in_right_target and center[0] > right_target_x:
-					right_target_entries += 1
-
+				
 				# check if fish is in left target
-				if center[0] < left_target_x:
-					#if not in_left_target:
-					#	with open(zone_log, 'a') as f:
-					#		writer = csv.writer(f)
-					#		writer.writerow(('left_target','{:.2f}'.format(counter*spf)))
+				if center[0] < left_target_x and \
+				center[1] < left_target_y2 and \
+				center[1] > left_target_y1:
+	
+					# check if left target zone entry occurred
+					if not in_left_target:
+						left_target_entries += 1
+				
 					left_target_frame_cnt += (frames_not_tracking + 1)
 					in_left_target = True
 					if not first_target_zone_entered:
@@ -872,11 +1041,14 @@ class Tracker:
 					in_left_target = False
 
 				# check if fish is in right target
-				if center[0] > right_target_x:
-					#if not in_right_target:
-					#	with open(zone_log, 'a') as f:
-					#		writer = csv.writer(f)
-					#		writer.writerow(('right_target','{:.2f}'.format(counter*spf)))
+				if center[0] > right_target_x and \
+				center[1] < right_target_y2 and \
+				center[1] > right_target_y1:
+
+					# check if right target zone entry occurred
+					if not in_right_target:
+						right_target_entries += 1
+
 					right_target_frame_cnt += (frames_not_tracking + 1)
 					in_right_target = True
 					if not first_target_zone_entered:
@@ -895,10 +1067,6 @@ class Tracker:
 
 				# check if in upper mirror zone
 				if center[0] > upper_mirror_x1 and center[0] < upper_mirror_x2 and center[1] < upper_mirror_y:
-					#if not in_upper_mirror:
-					#	with open(zone_log, 'a') as f:
-					#		writer = csv.writer(f)
-					#		writer.writerow(('upper_mirror','{:.2f}'.format(counter*spf)))
 					upper_mirror_frame_cnt += (frames_not_tracking + 1)
 					in_upper_mirror = True
 				else:
@@ -906,10 +1074,6 @@ class Tracker:
 
 				# check if in lower mirror zone
 				if center[0] > lower_mirror_x1 and center[0] < lower_mirror_x2 and center[1] > lower_mirror_y:
-					#if not in_lower_mirror:
-					#	with open(zone_log, 'a') as f:
-					#		writer = csv.writer(f)
-					#		writer.writerow(('lower_mirror','{:.2f}'.format(counter*spf)))
 					lower_mirror_frame_cnt += (frames_not_tracking + 1)
 					in_lower_mirror = True
 				else:
@@ -917,10 +1081,6 @@ class Tracker:
 
 				# check if in upper left thigmotaxis zone
 				if center[0] > thigmo_ul_x1 and center[0] < thigmo_ul_x2 and center[1] < thigmo_upper_y:
-					#if not in_ul_thigmo:
-					#	with open(zone_log, 'a') as f:
-					#		writer = csv.writer(f)
-					#		writer.writerow(('ul_thigmo','{:.2f}'.format(counter*spf)))
 					ul_thigmo_frame_cnt += (frames_not_tracking + 1)
 					in_ul_thigmo = True
 				else:
@@ -928,10 +1088,6 @@ class Tracker:
 
 				# check if in upper right thigmotaxis zone
 				if center[0] > thigmo_ur_x1 and center[0] < thigmo_ur_x2 and center[1] < thigmo_upper_y:
-					#if not in_ur_thigmo:
-					#	with open(zone_log, 'a') as f:
-					#		writer = csv.writer(f)
-					#		writer.writerow(('ur_thigmo','{:.2f}'.format(counter*spf)))
 					ur_thigmo_frame_cnt += (frames_not_tracking + 1)
 					in_ur_thigmo = True
 				else:
@@ -939,10 +1095,6 @@ class Tracker:
 
 				# check if in lower left thigmotaxis zone
 				if center[0] > thigmo_ll_x1 and center[0] < thigmo_ll_x2 and center[1] > thigmo_lower_y:
-					#if not in_ll_thigmo:
-					#	with open(zone_log, 'a') as f:
-					#		writer = csv.writer(f)
-					#		writer.writerow(('ll_thigmo','{:.2f}'.format(counter*spf)))
 					ll_thigmo_frame_cnt += (frames_not_tracking + 1)
 					in_ll_thigmo = True
 				else:
@@ -950,61 +1102,37 @@ class Tracker:
 
 				# check if in lower right thigmotaxis zone
 				if center[0] > thigmo_lr_x1 and center[0] < thigmo_lr_x2 and center[1] > thigmo_lower_y:
-					#if not in_ur_thigmo:
-					#	with open(zone_log, 'a') as f:
-					#		writer = csv.writer(f)
-					#		writer.writerow(('ur_thigmo','{:.2f}'.format(counter*spf)))
 					lr_thigmo_frame_cnt += (frames_not_tracking + 1)
 					in_lr_thigmo = True
 				else:
 					in_lr_thigmo = False
 
 				# check if fish is in corners (may use for thigmotaxis score)
-				if center[0] < thigmo_ul_x1 and center[1] < thigmo_upper_y:
-					#if not in_ul_corner:
-					#	with open(zone_log, 'a') as f:
-					#		writer = csv.writer(f)
-					#		writer.writerow(('ul_corner','{:.2f}'.format(counter*spf)))
-					ul_corner_frame_cnt += (frames_not_tracking + 1)
-					in_ul_corner = True
-				else:
-					in_ul_corner = False
-
-				if center[0] < thigmo_ll_x1 and center[1] > thigmo_lower_y:
-					#if not in_ll_corner:
-					#	with open(zone_log, 'a') as f:
-					#		writer = csv.writer(f)
-					#		writer.writerow(('ll_corner','{:.2f}'.format(counter*spf)))
-					ll_corner_frame_cnt += (frames_not_tracking + 1)
-					in_ll_corner = True
-				else:
-					in_ll_corner = False
-
-				if center[0] > thigmo_ur_x2 and center[1] < thigmo_upper_y:
-					#if not in_ur_corner:
-					#	with open(zone_log, 'a') as f:
-					#		writer = csv.writer(f)
-					#		writer.writerow(('ur_corner','{:.2f}'.format(counter*spf)))
-					ur_corner_frame_cnt += (frames_not_tracking + 1)
-					in_ur_corner = True
-				else:
-					in_ur_corner = False
-
-				if center[0] > thigmo_lr_x2 and center[1] > thigmo_lower_y:
-					#if not in_lr_corner:
-					#	with open(zone_log, 'a') as f:
-					#		writer = csv.writer(f)
-					#		writer.writerow(('lr_corner','{:.2f}'.format(counter*spf)))
-					lr_corner_frame_cnt += (frames_not_tracking + 1)
-					in_lr_corner = True
-				else:
-					in_lr_corner = False
+# 				if center[0] < thigmo_ul_x1 and center[1] < thigmo_upper_y:
+# 					ul_corner_frame_cnt += (frames_not_tracking + 1)
+# 					in_ul_corner = True
+# 				else:
+# 					in_ul_corner = False
+# 
+# 				if center[0] < thigmo_ll_x1 and center[1] > thigmo_lower_y:
+# 					ll_corner_frame_cnt += (frames_not_tracking + 1)
+# 					in_ll_corner = True
+# 				else:
+# 					in_ll_corner = False
+# 
+# 				if center[0] > thigmo_ur_x2 and center[1] < thigmo_upper_y:
+# 					ur_corner_frame_cnt += (frames_not_tracking + 1)
+# 					in_ur_corner = True
+# 				else:
+# 					in_ur_corner = False
+# 
+# 				if center[0] > thigmo_lr_x2 and center[1] > thigmo_lower_y:
+# 					lr_corner_frame_cnt += (frames_not_tracking + 1)
+# 					in_lr_corner = True
+# 				else:
+# 					in_lr_corner = False
 
 				if not in_left_target and not in_right_target and not in_ll_corner and not in_lr_corner and not in_ul_corner and not in_ur_corner and not in_ll_thigmo and not in_lr_thigmo and not in_ul_thigmo and not in_ur_thigmo and not in_lower_mirror and not in_upper_mirror:
-					#if not in_center:
-					#	with open(zone_log, 'a') as f:
-					#		writer = csv.writer(f)
-					#		writer.writerow(('center','{:.2f}'.format(counter*spf)))
 					in_center = True
 					center_frame_cnt += (frames_not_tracking + 1)
 
@@ -1118,10 +1246,10 @@ class Tracker:
 
 			# draw green box around target zones
 			if in_left_target:
-				cv2.rectangle(frame,(0,0),(left_target_x,vidHeight),(0,255,0),2)
+				cv2.rectangle(frame,(0,left_target_y1),(left_target_x, left_target_y2),(0,255,0),2)
 
 			if in_right_target:
-				cv2.rectangle(frame,(right_target_x,0),(vidWidth,vidHeight),(0,255,0),2)
+				cv2.rectangle(frame,(right_target_x,right_target_y1),(vidWidth,right_target_y2),(0,255,0),2)
 
 			# draw blue box around mirror zones
 			if in_upper_mirror:
@@ -1143,9 +1271,10 @@ class Tracker:
 			if in_lr_thigmo:
 				cv2.rectangle(frame,(thigmo_lr_x1,thigmo_lower_y),(thigmo_lr_x2,vidHeight),(0,0,255),2)
 
+			# switch to True if you want the grid drawn on every frame
 			if False:
-				cv2.rectangle(frame,(0,0),(left_target_x,vidHeight),(0,255,0),2)
-				cv2.rectangle(frame,(right_target_x,0),(vidWidth,vidHeight),(0,255,0),2)
+				cv2.rectangle(frame,(0,left_target_y1),(left_target_x,left_target_y2),(0,255,0),2)
+				cv2.rectangle(frame,(right_target_x,right_target_y1),(vidWidth,right_target_y2),(0,255,0),2)
 				cv2.rectangle(frame,(upper_mirror_x1,0),(upper_mirror_x2,upper_mirror_y),(255,0,0),2)
 				cv2.rectangle(frame,(lower_mirror_x1,lower_mirror_y),(lower_mirror_x2,vidHeight),(255,0,0),2)
 				cv2.rectangle(frame,(thigmo_ul_x1,0),(thigmo_ul_x2,thigmo_upper_y),(0,0,255),2)
@@ -1156,7 +1285,7 @@ class Tracker:
 			if acquired and not (in_left_target or in_right_target or in_ll_corner or in_lr_corner or in_ul_corner or \
 								in_ur_corner or in_ll_thigmo or in_lr_thigmo or in_ul_thigmo or in_ur_thigmo or \
 								in_lower_mirror or in_upper_mirror):
-				cv2.rectangle(frame,(thigmo_ul_x1, thigmo_upper_y),(thigmo_lr_x2,thigmo_lower_y),(255,255,0),2)
+				cv2.rectangle(frame,(left_target_x, thigmo_upper_y),(right_target_x,thigmo_lower_y),(255,255,0),2)
 			# show frame
 			if show_images:
 				#cv2.imshow('image',frame)
@@ -1299,7 +1428,7 @@ class Tracker:
 				                'Prop.Reinforced.%', 'Prop.Non.Reinforced.%', \
 				                'Time.Mirror.Secs', 'Prop.Mirror.%', \
 				                'Time.Thigmo.Secs', 'Prop.Thigmo.%', \
-				                'Prop.Center.%', 'Activity.Level.CM', \
+				                'Prop.Center.%', 'Activity.Level.Pixels', \
 				                'Time.Corners.Secs', 'Prop.Corners.%', \
 				                'First.Target.Zone', \
 				                'Left.Target.Secs', 'Right.Target.Secs', \
@@ -1350,7 +1479,7 @@ class Tracker:
 
 				# write the header
 				writer.writerow(('File', 'Total.Frames', 'Total.Time', \
-				                'Lost.Track.Frame.Cnt', 'Cant.Decide', \
+				                'Lost.Track.Frame.Cnt', \
 				                'Times.Lost.Track', 'Frames.Before.Acq', \
 				                'Frames.Btwn.Tracks'))
 
@@ -1360,34 +1489,10 @@ class Tracker:
 
 			# write the data (limit all decimals to 2 digits)
 			writer.writerow((filename, counter,  '{:.2f}'.format(counter*spf), \
-							lost_track_frame_cnt, cant_decide, times_lost_track, \
+							lost_track_frame_cnt, times_lost_track, \
 							frames_b4_acq, frames_since_last_track))
 		print 'Done with ' + tracker_log + '!'
 		print '#' * 45
-
-		if False:
-			print '\n'
-			print '#'*45
-			print 'Plot some stuff!'
-			#fig = plt.figure()
-			#ax = fig.add_subplot(111)
-
-			#y = [prop_time_reinforced, prop_time_non_reinforced, prop_time_mirror, prop_time_thigmo, prop_time_center]
-			#N = len(y)
-			#x = range(N)
-			#width = 1/6.0
-			#ax.bar(x, y, width, color='blue')
-			#ax.set_xticklabels(['_', \
-			#					'Reinforced', \
-			#                    'Non.Reinforced', \
-			#                    'Mirror', \
-			#                    'Thigmo', \
-			#                    'Center'])
-			#ax.set_ylabel('% in zone')
-			#ax.set_title('Prop.In.Zones')
-			#fig.savefig('Prop_In_Zones.png', bbox_inches='tight')
-
-			print '#'*45, '\n'
 
 		### after the program exits, print some useful stuff to the screen
 		# first calculate realized fps
@@ -1396,7 +1501,6 @@ class Tracker:
 		print 'Frame count: ' + str(counter)
 		print 'Total Video Time: ' + str(counter*spf) + ' secs'
 		print 'Lost track frame count: ' + str(lost_track_frame_cnt)
-		print 'Cant decide: ' + str(cant_decide)
 		print 'Times lost track: ' + str(times_lost_track)
 		print 'Frames before acquisition: ' + str(frames_b4_acq)
 		print '\nThis program took ' + str(time.time() - start_time) + " seconds to run."
@@ -1409,13 +1513,15 @@ if __name__ == '__main__':
 	ap = argparse.ArgumentParser()
 	ap.add_argument('-i', '--path2video', help = 'Path to video file including the filename', required=True)
 	ap.add_argument('-c', '--config_file', help = 'Path to config file (json) including the filename', required=True)
+	ap.add_argument('-f', '--fish_json', help = 'Path to fish.json including the filename', required=True)
+	ap.add_argument('-g', '--grid_json', help = 'Path to numerosity_grid.json including the filename', required=True)
 	ap.add_argument('-s', '--show_images', help='Whether or not show images (slows processing)',action='store_true')
 	args = vars(ap.parse_args())
 
 	path = args['path2video']
 
 	#path = r'D:\num\gambusia_17_201_male_winston_9_1_7_14_50_none_R.mp4'
-	#path = r'D:\num\gambusia_17_376_female_glinda_9_1_7_14_50_none_L.mp4'
+	path = r'D:\num\gambusia_17_376_female_glinda_9_1_7_14_50_none_L.mp4'
 	#path = r'D:\new_num\gambusia_17_355_female_winnie_9_1_9_12_75_none_R.mp4'
 	#path = r'D:\new_num\gambusia_18_TBD_female_Gail_9_1_9_12_75_none_L.mp4'
 	#path = r'D:\new_num\gambusia_17_373_female_grace_9_1_9_12_75_none_L.mp4'
@@ -1429,11 +1535,13 @@ if __name__ == '__main__':
 
 	vid_file = str(path)
 	config_file = str(args['config_file'])
+	fish_json = str(args['fish_json'])
+	grid_json = str(args['grid_json'])
 
 	if args['show_images']:
 		show_images = True
 	else:
 		show_images = False
 
-	this_tracker = Tracker(vid_file, config_file, show_images)
+	this_tracker = Tracker(vid_file, config_file, fish_json, grid_json, show_images)
 	this_tracker.run_numerosity_tracker()
