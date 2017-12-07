@@ -1,0 +1,828 @@
+{
+    "CBT1": {
+        "cam_node": "haumea",
+        "fishstandardlength": "TBD",
+        "node": "makemake",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "CBT2": {
+        "cam_node": "earth",
+        "fishstandardlength": "TBD",
+        "node": "mars",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "CBT3": {
+        "cam_node": "uranus",
+        "fishstandardlength": "TBD",
+        "node": "neptune",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "CBT4": {
+        "cam_node": "pluto",
+        "fishstandardlength": "TBD",
+        "node": "ceres",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "CBT5": {
+        "cam_node": "mercury",
+        "fishstandardlength": "TBD",
+        "node": "venus",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "CBT6": {
+        "cam_node": "jupiter",
+        "fishstandardlength": "TBD",
+        "node": "saturn",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Gabi": {
+        "cam_node": "albatross",
+        "fishstandardlength": "325",
+        "node": "bobolink",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Gabriel": {
+        "cam_node": "earth",
+        "fishstandardlength": "205",
+        "node": "mars",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Gail": {
+        "cam_node": "mercury",
+        "fishstandardlength": "TBD",
+        "node": "venus",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Garfield": {
+        "cam_node": "earth",
+        "fishstandardlength": "203",
+        "node": "mars",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Garrett": {
+        "cam_node": "mercury",
+        "fishstandardlength": "225",
+        "node": "venus",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Garrison": {
+        "cam_node": "uranus",
+        "fishstandardlength": "216",
+        "node": "neptune",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Gary": {
+        "cam_node": "earth",
+        "fishstandardlength": "TBD",
+        "node": "mars",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Gavin": {
+        "cam_node": "jupiter",
+        "fishstandardlength": "199",
+        "node": "saturn",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Gemma": {
+        "cam_node": "haumea",
+        "fishstandardlength": "TBD",
+        "node": "makemake",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Gendry": {
+        "cam_node": "mercury",
+        "fishstandardlength": "183",
+        "node": "venus",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "George": {
+        "cam_node": "jupiter",
+        "fishstandardlength": "TBD",
+        "node": "saturn",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Georgia": {
+        "cam_node": "eagle",
+        "fishstandardlength": "304",
+        "node": "falcon",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "GeorgiaFIXED": {
+        "cam_node": "eagle",
+        "fishstandardlength": "TBD",
+        "node": "hawk",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Gertrude": {
+        "cam_node": "cougar",
+        "fishstandardlength": "288",
+        "node": "dolphin",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Gibson": {
+        "cam_node": "uranus",
+        "fishstandardlength": "TBD",
+        "node": "neptune",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Gideon": {
+        "cam_node": "gorilla",
+        "fishstandardlength": "TBD",
+        "node": "hawk",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Gilly": {
+        "cam_node": "jupiter",
+        "fishstandardlength": "316",
+        "node": "saturn",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Gina": {
+        "cam_node": "cougar",
+        "fishstandardlength": "269",
+        "node": "dolphin",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Gladys": {
+        "cam_node": "kiwi",
+        "fishstandardlength": "TBD",
+        "node": "leopard",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Gloria": {
+        "cam_node": "eagle",
+        "fishstandardlength": "335",
+        "node": "falcon",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Gordon": {
+        "cam_node": "pluto",
+        "fishstandardlength": "TBD",
+        "node": "ceres",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Grant": {
+        "cam_node": "haumea",
+        "fishstandardlength": "209",
+        "node": "makemake",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Grayson": {
+        "cam_node": "kiwi",
+        "fishstandardlength": "TBD",
+        "node": "leopard",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Gretchen": {
+        "cam_node": "cougar",
+        "fishstandardlength": "TBD",
+        "node": "dolphin",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Griffin": {
+        "cam_node": "impala",
+        "fishstandardlength": "TBD",
+        "node": "jaguar",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Gunther": {
+        "cam_node": "kiwi",
+        "fishstandardlength": "255",
+        "node": "leopard",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Gustavo": {
+        "cam_node": "pluto",
+        "fishstandardlength": "213",
+        "node": "ceres",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Gwen": {
+        "cam_node": "impala",
+        "fishstandardlength": "TBD",
+        "node": "jaguar",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Hachi": {
+        "cam_node": "haumea",
+        "fishstandardlength": "TBD",
+        "node": "makemake",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Harlene": {
+        "cam_node": "pluto",
+        "fishstandardlength": "TBD",
+        "node": "ceres",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Harry": {
+        "cam_node": "uranus",
+        "fishstandardlength": "TBD",
+        "node": "neptune",
+        "sex": "male",
+        "species": "nigrensis"
+    },
+    "Henry": {
+        "cam_node": "pluto",
+        "fishstandardlength": "TBD",
+        "node": "ceres",
+        "sex": "male",
+        "species": "nigrensis"
+    },
+    "Horton": {
+        "cam_node": "cougar",
+        "fishstandardlength": "TBD",
+        "node": "dolphin",
+        "sex": "male",
+        "species": "nigrensis"
+    },
+    "Huma": {
+        "cam_node": "mercury",
+        "fishstandardlength": "TBD",
+        "node": "venus",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Ifeoma": {
+        "cam_node": "kiwi",
+        "fishstandardlength": "TBD",
+        "node": "leopard",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Iggy": {
+        "cam_node": "uranus",
+        "fishstandardlength": "TBD",
+        "node": "neptune",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Iliana": {
+        "cam_node": "cougar",
+        "fishstandardlength": "TBD",
+        "node": "dolphin",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Ilyssa": {
+        "cam_node": "haumea",
+        "fishstandardlength": "TBD",
+        "node": "makemake",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Imelda": {
+        "cam_node": "uranus",
+        "fishstandardlength": "TBD",
+        "node": "neptune",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "India": {
+        "cam_node": "kiwi",
+        "fishstandardlength": "TBD",
+        "node": "leopard",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Indy": {
+        "cam_node": "cougar",
+        "fishstandardlength": "TBD",
+        "node": "dolphin",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Inez": {
+        "cam_node": "pluto",
+        "fishstandardlength": "TBD",
+        "node": "ceres",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Inocencia": {
+        "cam_node": "haumea",
+        "fishstandardlength": "TBD",
+        "node": "makemake",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Iris": {
+        "cam_node": "earth",
+        "fishstandardlength": "TBD",
+        "node": "mars",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Irma": {
+        "cam_node": "uranus",
+        "fishstandardlength": "TBD",
+        "node": "neptune",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Isabella": {
+        "cam_node": "cougar",
+        "fishstandardlength": "TBD",
+        "node": "dolphin",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Isadora": {
+        "cam_node": "earth",
+        "fishstandardlength": "TBD",
+        "node": "mars",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Iva": {
+        "cam_node": "old_gorilla",
+        "fishstandardlength": "TBD",
+        "node": "hawk",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Ivanka": {
+        "cam_node": "jupiter",
+        "fishstandardlength": "TBD",
+        "node": "saturn",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Ivette": {
+        "cam_node": "kiwi",
+        "fishstandardlength": "TBD",
+        "node": "leopard",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Ivonne": {
+        "cam_node": "haumea",
+        "fishstandardlength": "TBD",
+        "node": "makemake",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Ivory": {
+        "cam_node": "earth",
+        "fishstandardlength": "TBD",
+        "node": "mars",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Izzy": {
+        "cam_node": "old_gorilla",
+        "fishstandardlength": "TBD",
+        "node": "hawk",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Laci": {
+        "cam_node": "uranus",
+        "fishstandardlength": "TBD",
+        "node": "neptune",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Lana": {
+        "cam_node": "jupiter",
+        "fishstandardlength": "TBD",
+        "node": "saturn",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Lanet": {
+        "cam_node": "earth",
+        "fishstandardlength": "TBD",
+        "node": "mars",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Lawrence": {
+        "cam_node": "eagle",
+        "fishstandardlength": "TBD",
+        "node": "falcon",
+        "sex": "male",
+        "species": "nigrensis"
+    },
+    "Leo": {
+        "cam_node": "earth",
+        "fishstandardlength": "TBD",
+        "node": "mars",
+        "sex": "male",
+        "species": "nigrensis"
+    },
+    "Lester": {
+        "cam_node": "kiwi",
+        "fishstandardlength": "TBD",
+        "node": "leopard",
+        "sex": "male",
+        "species": "nigrensis"
+    },
+    "Oahu": {
+        "cam_node": "impala",
+        "fishstandardlength": "TBD",
+        "node": "jaguar",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Ocean": {
+        "cam_node": "mercury",
+        "fishstandardlength": "TBD",
+        "node": "venus",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Octavia": {
+        "cam_node": "pluto",
+        "fishstandardlength": "TBD",
+        "node": "ceres",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Odyssey": {
+        "cam_node": "eagle",
+        "fishstandardlength": "TBD",
+        "node": "falcon",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Ohara": {
+        "cam_node": "albatross",
+        "fishstandardlength": "TBD",
+        "node": "bobolink",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Olga": {
+        "cam_node": "albatross",
+        "fishstandardlength": "TBD",
+        "node": "bobolink",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Ollie": {
+        "cam_node": "pluto",
+        "fishstandardlength": "TBD",
+        "node": "ceres",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Olopte": {
+        "cam_node": "jupiter",
+        "fishstandardlength": "TBD",
+        "node": "saturn",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Olympia": {
+        "cam_node": "earth",
+        "fishstandardlength": "TBD",
+        "node": "mars",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Omi": {
+        "cam_node": "albatross",
+        "fishstandardlength": "TBD",
+        "node": "bobolink",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Ontario": {
+        "cam_node": "uranus",
+        "fishstandardlength": "TBD",
+        "node": "neptune",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Onyx": {
+        "cam_node": "jupiter",
+        "fishstandardlength": "TBD",
+        "node": "saturn",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Opal": {
+        "cam_node": "haumea",
+        "fishstandardlength": "TBD",
+        "node": "makemake",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Oprah": {
+        "cam_node": "impala",
+        "fishstandardlength": "TBD",
+        "node": "jaguar",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Orchid": {
+        "cam_node": "mercury",
+        "fishstandardlength": "TBD",
+        "node": "venus",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Orlanda": {
+        "cam_node": "jupiter",
+        "fishstandardlength": "TBD",
+        "node": "saturn",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Oteria": {
+        "cam_node": "eagle",
+        "fishstandardlength": "TBD",
+        "node": "falcon",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Oz": {
+        "cam_node": "eagle",
+        "fishstandardlength": "TBD",
+        "node": "falcon",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Ozera": {
+        "cam_node": "pluto",
+        "fishstandardlength": "TBD",
+        "node": "ceres",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Ozzi": {
+        "cam_node": "mercury",
+        "fishstandardlength": "TBD",
+        "node": "venus",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Wade": {
+        "cam_node": "albatross",
+        "fishstandardlength": "TBD",
+        "node": "bobolink",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Wahida": {
+        "cam_node": "cougar",
+        "fishstandardlength": "TBD",
+        "node": "dolphin",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Waldhurga": {
+        "cam_node": "earth",
+        "fishstandardlength": "307",
+        "node": "mars",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Wanda": {
+        "cam_node": "pluto",
+        "fishstandardlength": "292",
+        "node": "ceres",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Warren": {
+        "cam_node": "eagle",
+        "fishstandardlength": "TBD",
+        "node": "finch",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Watson": {
+        "cam_node": "impala",
+        "fishstandardlength": "197",
+        "node": "jaguar",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Waverly": {
+        "cam_node": "albatross",
+        "fishstandardlength": "TBD",
+        "node": "bobolink",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Wayne": {
+        "cam_node": "mercury",
+        "fishstandardlength": "TBD",
+        "node": "venus",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Wedelia": {
+        "cam_node": "eagle",
+        "fishstandardlength": "TBD",
+        "node": "finch",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Wendy": {
+        "cam_node": "uranus",
+        "fishstandardlength": "TBD",
+        "node": "neptune",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Wes": {
+        "cam_node": "gorilla",
+        "fishstandardlength": "TBD",
+        "node": "hawk",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Wheatley": {
+        "cam_node": "pluto",
+        "fishstandardlength": "TBD",
+        "node": "ceres",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Whitney": {
+        "cam_node": "uranus",
+        "fishstandardlength": "284",
+        "node": "neptune",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Wilbur": {
+        "cam_node": "kiwi",
+        "fishstandardlength": "196",
+        "node": "leopard",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Wildflower": {
+        "cam_node": "mercury",
+        "fishstandardlength": "TBD",
+        "node": "venus",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Wile": {
+        "cam_node": "jupiter",
+        "fishstandardlength": "TBD",
+        "node": "saturn",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Wilhelmina": {
+        "cam_node": "haumea",
+        "fishstandardlength": "272",
+        "node": "makemake",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Willis": {
+        "cam_node": "impala",
+        "fishstandardlength": "224",
+        "node": "jaguar",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Willow": {
+        "cam_node": "haumea",
+        "fishstandardlength": "TBD",
+        "node": "makemake",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Wilma": {
+        "cam_node": "haumea",
+        "fishstandardlength": "343",
+        "node": "makemake",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Winnifred": {
+        "cam_node": "jupiter",
+        "fishstandardlength": "235",
+        "node": "saturn",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Winona": {
+        "cam_node": "albatross",
+        "fishstandardlength": "323",
+        "node": "bobolink",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Winter": {
+        "cam_node": "mercury",
+        "fishstandardlength": "287",
+        "node": "venus",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Winthrop": {
+        "cam_node": "pluto",
+        "fishstandardlength": "213",
+        "node": "ceres",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Wisteria": {
+        "cam_node": "earth",
+        "fishstandardlength": "TBD",
+        "node": "mars",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "Wyatt": {
+        "cam_node": "old_gorilla",
+        "fishstandardlength": "237",
+        "node": "hawk",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Wylla": {
+        "cam_node": "uranus",
+        "fishstandardlength": "295",
+        "node": "neptune",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "glinda": {
+        "cam_node": "earth",
+        "fishstandardlength": "376",
+        "node": "mars",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "grace": {
+        "cam_node": "mercury",
+        "fishstandardlength": "373",
+        "node": "venus",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "gregory": {
+        "cam_node": "jupiter",
+        "fishstandardlength": "234",
+        "node": "saturn",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "walter": {
+        "cam_node": "uranus",
+        "fishstandardlength": "200",
+        "node": "neptune",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "winnie": {
+        "cam_node": "haumea",
+        "fishstandardlength": "355",
+        "node": "makemake",
+        "sex": "female",
+        "species": "gambusia"
+    },
+    "winston": {
+        "cam_node": "pluto",
+        "fishstandardlength": "201",
+        "node": "ceres",
+        "sex": "male",
+        "species": "gambusia"
+    }
+}
