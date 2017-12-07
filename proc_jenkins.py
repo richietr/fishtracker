@@ -48,7 +48,8 @@ vid_proc_list = []
 last_line = None
 
 # Delete any old results
-os.remove(local_results_file)
+if os.path.exists(local_results_file):
+	os.remove(local_results_file)
 
 #print os.listdir(share_base_loc)
 
