@@ -150,7 +150,7 @@ for round in rounds_to_proc:
                         if os.path.exists(results_file):
                             # just want to append last line of local file to end of remote file
                             with open(results_file, "r") as f:
-                                last_line = f.readlines()[-1]
+                                last_line = f.readlines()[-2]
                             if last_line is not None:
                                 with open(results_file, "a") as f:
                                     f.write(last_line + '\n')
@@ -166,4 +166,4 @@ for round in rounds_to_proc:
                             f.write(vid + '\n')
 
                         # only processing one at a time so exit
-                        sys.exit(1)
+                        sys.exit(0)
