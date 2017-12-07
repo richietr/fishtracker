@@ -47,9 +47,10 @@ pies_to_process = []
 vid_proc_list = []
 last_line = None
 
+# TODO need to work on appending results
 # Delete any old results
-if os.path.exists(local_results_file):
-	os.remove(local_results_file)
+#if os.path.exists(local_results_file):
+#	os.remove(local_results_file)
 
 #print os.listdir(share_base_loc)
 
@@ -149,8 +150,8 @@ for round in rounds_to_proc:
                         # Manage results
                         if os.path.exists(results_file):
                             # just want to append last line of local file to end of remote file
-                            with open(results_file, "r") as f:
-                                last_line = f.readlines()[-2]
+                            with open(local_results_file, "r") as f:
+                                last_line = f.readlines()[-1]
                             if last_line is not None:
                                 with open(results_file, "a") as f:
                                     f.write(last_line + '\n')
