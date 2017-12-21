@@ -50,7 +50,7 @@ last_line = None
 # TODO need to work on appending results
 # Delete any old results
 #if os.path.exists(local_results_file):
-#	os.remove(local_results_file)
+#   os.remove(local_results_file)
 
 #print os.listdir(share_base_loc)
 
@@ -143,6 +143,8 @@ for round in rounds_to_proc:
 
                     if skip is False:
                         print "Processing " + vid
+                        with open("envvar.txt", "w") as f:
+                            f.write("VIDEO_FILE=" + vid)
                         vid_file = os.path.join(share_base_loc, round, pie, vid)
                         this_tracker = Tracker(vid_file, config_file, fish_json, grid_json, show_images)
                         this_tracker.run_numerosity_tracker()
