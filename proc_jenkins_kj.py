@@ -137,7 +137,7 @@ for round in rounds_to_proc:
                         fedside = filename_parts[10]
                         correctside = filename_parts[11]
 
-                        if int(day) < 9 or fedside is not 'none':
+                        if int(day) < 9 or fedside != 'none':
                             print "Not processing because video is not a testing video: " + vid
                             skip = True
 
