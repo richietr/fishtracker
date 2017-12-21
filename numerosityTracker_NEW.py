@@ -705,16 +705,21 @@ class Tracker:
         else:
             trial_type = 'reinforce'
 
+        print '!!!!'
+        print fishid[:1]
+        print '!!!!'
         # determine if fish was trained to high or low
         for ledda in HIGH_STIMULUS_LETTER:
             print ledda
-            if fishid.startswith(ledda):
+            #if fishid.startswith(ledda):
+            if fishid[:1] == ledda:
                 print 'Fish was trained to high stimulus!'
                 trained_high = True
                 trained_low  = False
         for ledda in LOW_STIMULUS_LETTER:
             print ledda
-            if fishid.startswith(LOW_STIMULUS_LETTER):
+            if fishid[:1] == ledda:
+            #if fishid.startswith(LOW_STIMULUS_LETTER):
                 print 'Fish was trained to low stimulus!'
                 trained_high = False
                 trained_low  = True
