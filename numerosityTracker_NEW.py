@@ -878,8 +878,8 @@ class Tracker:
         while(cap.isOpened()):
 
             #print 'frame ' + str(counter) + '\n\n'
-            if not faux_counter % 100:
-                print 'Processing frame ' + str(faux_counter) + '...'
+            if not faux_counter % fps:
+                print 'Processing frame ' + str(faux_counter) + '(' + str(faux_counter*spf) + ' secs)...'
 
             # for timing, maintaining constant fps
             beginningOfLoop = time.time()
@@ -1322,7 +1322,10 @@ class Tracker:
 
         if leftside_high or rightside_high:
             if (trained_high and leftside_high) or (trained_low and not leftside_high):
-                reinforced_latency = left_target_latency_frame_cnt * spf
+                if left_target_entries == 0:
+                    reinforced_latency = 'NA'
+                else
+                    reinforced_latency = left_target_latency_frame_cnt * spf
                 time_in_reinforced_target = left_target_frame_cnt * spf
                 num_entries_reinforced = left_target_entries
                 if left_target_frame_cnt == 0:
@@ -1334,7 +1337,10 @@ class Tracker:
                 elif first_target_zone == 'right':
                     first_target_zone = 'Non-Reinforced'
             elif (trained_high and rightside_high) or (trained_low and not rightside_high):
-                reinforced_latency = right_target_latency_frame_cnt * spf
+                if right_target_entries == 0:
+                    reinforced_latency = 'NA'
+                else:
+                    reinforced_latency = right_target_latency_frame_cnt * spf
                 time_in_reinforced_target = right_target_frame_cnt * spf
                 num_entries_reinforced = right_target_entries
                 if right_target_frame_cnt == 0:
@@ -1352,7 +1358,10 @@ class Tracker:
             print 'First target zone entered: ' + first_target_zone
 
             if (trained_low and leftside_high) or (trained_high and not leftside_high):
-                non_reinforced_latency = left_target_latency_frame_cnt * spf
+                if left_target_entries == 0:
+                    non_reinforced_latency = 'NA'
+                else:
+                    non_reinforced_latency = left_target_latency_frame_cnt * spf
                 time_in_non_reinforced_target = left_target_frame_cnt * spf
                 num_entries_non_reinforced = left_target_entries
                 if left_target_frame_cnt == 0:
@@ -1360,7 +1369,10 @@ class Tracker:
                 else:
                     prop_time_non_reinforced = (float(left_target_frame_cnt) / counter) * 100.0
             elif (trained_low and rightside_high) or (trained_high and not rightside_high):
-                non_reinforced_latency = right_target_latency_frame_cnt * spf
+                if right_target_entries == 0:
+                    non_reinforced_latency = 'NA'
+                else:
+                    non_reinforced_latency = right_target_latency_frame_cnt * spf
                 time_in_non_reinforced_target = right_target_frame_cnt * spf
                 num_entries_non_reinforced = right_target_entries
                 if right_target_frame_cnt == 0:
