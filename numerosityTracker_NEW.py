@@ -412,9 +412,10 @@ class Tracker:
 
         # Parse out filepath
         path_strip = os.path.splitext(path)[0]
-        #TODO make work for windows and linux
-        path_parts = path_strip.split('/')
-        #path_parts = path_strip.split('\\')
+        if os.name == 'nt': # Windows
+            path_parts = path_strip.split('\\')
+        else: # Linux
+            path_parts = path_strip.split('/')
         filename = path_parts[len(path_parts)-1]
         filename_parts = filename.split('_')
 
@@ -491,6 +492,10 @@ class Tracker:
                 SECS_B4_LOST = int(config_json['SECS_BEFORE_LOST'])
             if 'SCREEN_DELAY_SECS' in config_json:
                 SCREEN_DELAY = int(config_json['SCREEN_DELAY_SECS'])
+            if 'TESTING_CRITICAL_DUR_SECS' in config_json:
+                TESTING_CRITICAL_DUR_SECS = int(config_json['TESTING_CRITICAL_DUR_SECS'])
+            if 'TRAINING_CRITICAL_DUR_SECS' in config_json:
+                TRAINING_CRITICAL_DUR_SECS = int(config_json['TRAINING_CRITICAL_DUR_SECS'])                
             if 'FEED_DELAY_SECS' in config_json:
                 FEED_DELAY = int(config_json['FEED_DELAY_SECS'])
             if 'FEED_DURATION_SECS' in config_json:
@@ -564,6 +569,8 @@ class Tracker:
         print 'SECS_BEFORE_LOST=' + str(SECS_B4_LOST)
         print 'FEED_DELAY_SECS=' + str(FEED_DELAY)
         print 'SCREEN_DELAY_SECS=' + str(SCREEN_DELAY)
+        print 'TESTING_CRITICAL_DUR_SECS=' + str(TESTING_CRITICAL_DUR_SECS)
+        print 'TRAINING_CRITICAL_DUR_SECS=' + str(TRAINING_CRITICAL_DUR_SECS)
         print 'FEED_DURATION_SECS=' + str(FEED_DURATION)
         print 'TOTAL_SECS=' + str(TOTAL_TIME)
         print 'NUM_FRAMES_FOR_BACKGROUND=' + str(NUM_FRAMES_FOR_BACKGROUND)
@@ -619,12 +626,13 @@ class Tracker:
         freeze_log = 'num_freeze_log.csv'
         tracker_log = 'num_tracker_log.csv'
 
-        counter = 0
-        faux_counter = 0
+        counter = 1
+        faux_counter = 1
         trained_high = False
         trained_low = False
         leftside_high = False
         rightside_high = False
+        
         first_target_zone = 'none'
         first_target_zone_entered = False
         left_target_frame_cnt = 0
@@ -633,6 +641,31 @@ class Tracker:
         left_target_entries = 0
         right_target_latency_frame_cnt = 0
         right_target_entries = 0
+        
+        prescreen_first_screen_zone = 'none'
+        prescreen_first_screen_zone_entered = False
+        prescreen_left_screen_frame_cnt = 0
+        prescreen_right_screen_frame_cnt = 0
+        prescreen_left_screen_latency_frame_cnt = 0
+        prescreen_left_screen_entries = 0
+        prescreen_right_screen_latency_frame_cnt = 0
+        prescreen_right_screen_entries = 0
+        
+        postscreen_critical_first_screen_zone = 'none'
+        postscreen_critical_first_screen_zone_entered = False
+        postscreen_critical_left_screen_frame_cnt = 0
+        postscreen_critical_right_screen_frame_cnt = 0
+        postscreen_critical_left_screen_latency_frame_cnt = 0
+        postscreen_critical_left_screen_entries = 0
+        postscreen_critical_right_screen_latency_frame_cnt = 0
+        postscreen_critical_right_screen_entries = 0
+        end_of_prescreen_zone = 'unknown'
+        start_of_postscreen_zone = 'unknown'
+        prescreen_left_screen_latency_secs = 'NA'
+        prescreen_right_screen_latency_secs = 'NA'
+        postscreen_critical_left_screen_latency_secs = 'NA'
+        postscreen_critical_right_screen_latency_secs = 'NA'
+        
         in_left_target = False
         in_right_target = False
         in_upper_mirror = False
@@ -673,6 +706,8 @@ class Tracker:
         acquired = False
         tracking = False
         frames_not_tracking = 0
+        prescreen_frames_not_tracking = 0
+        postscreen_critical_frames_not_tracking = 0
         lost_track_frame_cnt = 0
         times_lost_track = 0
         frames_since_last_track = []
@@ -698,28 +733,30 @@ class Tracker:
         trial_type = 'NA'
         if int(day) < 3:
             trial_type = 'habituation'
+            critical_dur_secs = 0
         elif int(day) < 9:
             trial_type = 'training'
+            critical_dur_secs = TRAINING_CRITICAL_DUR_SECS
         elif fedside == 'none':
             trial_type = 'testing'
+            critical_dur_secs = TESTING_CRITICAL_DUR_SECS
         else:
             trial_type = 'reinforce'
+            critical_dur_secs = 0
 
-        print '!!!!'
-        print fishid[:1]
-        print '!!!!'
+        #print '!!!!'
+        #print fishid[:1]
+        #print '!!!!'
         # determine if fish was trained to high or low
         for ledda in HIGH_STIMULUS_LETTER:
-            print ledda
-            #if fishid.startswith(ledda):
+            #print ledda
             if fishid[:1] == ledda:
                 print 'Fish was trained to high stimulus!'
                 trained_high = True
                 trained_low  = False
         for ledda in LOW_STIMULUS_LETTER:
-            print ledda
+            #print ledda
             if fishid[:1] == ledda:
-            #if fishid.startswith(LOW_STIMULUS_LETTER):
                 print 'Fish was trained to low stimulus!'
                 trained_high = False
                 trained_low  = True
@@ -822,7 +859,6 @@ class Tracker:
 
         # get some info about the video
         length = int(cap.get(cv2.cv.CV_CAP_PROP_FRAME_COUNT))
-        #length = 5781
         if length < 0:
             # manually count how many frames, this will take a little time...
             print 'Counting frames..'
@@ -851,6 +887,10 @@ class Tracker:
         NUM_FRAMES_TO_SKIP = FEED_DELAY * fps
         NUM_FRAMES_TO_TRIM = (TOTAL_TIME-FEED_DURATION) * fps
 
+        # Only process up to TOTAL_TIME
+        if length > fps*TOTAL_TIME:
+            length = fps*TOTAL_TIME
+            
         # grab the 20th frame for drawing the rectangle
         cap = cv2.VideoCapture(path)
         if not cap.isOpened():
@@ -875,20 +915,28 @@ class Tracker:
         prev_center = None
 
         print '\n\nProcessing...\n'
-        while(cap.isOpened()):
+        while(cap.isOpened() and faux_counter*spf <= TOTAL_TIME):
 
             #print 'frame ' + str(counter) + '\n\n'
             if not faux_counter % fps:
-                print 'Processing frame ' + str(faux_counter) + '(' + str(faux_counter*spf) + ' secs)...'
+                print 'Processing frame ' + str(faux_counter) + ' (' + str(faux_counter*spf) + ' secs)...'
 
             # for timing, maintaining constant fps
             beginningOfLoop = time.time()
 
             # skipping some frames at the beginning
+            SKIPPY = 0
             if first_pass:
-                for i in range(0, int(30*fps)):
+                for i in range(0, int(SKIPPY*fps)):
                     cap.read()
+                    faux_counter += 1
                     frames_not_tracking += 1 # should this be counted?
+                    
+                    if i*spf <= SCREEN_DELAY:
+                        prescreen_frames_not_tracking += 1
+                    elif i*spf <= SCREEN_DELAY+critical_dur_secs:
+                        postscreen_critical_frames_not_tracking += 1
+                    
             ret,frame = cap.read()
 
             if ret == False:
@@ -940,6 +988,7 @@ class Tracker:
                     # this is just accumulating pixels traveled
                     activity_level += (true_distance(prev_center, center))
 
+            # so we're tracking...
             if center is not None:
 
                 prev_center = center
@@ -963,12 +1012,30 @@ class Tracker:
                             #print 'Counting first ' + str(frames_b4_acq) + ' frames to the right target zone'
                             first_target_zone = 'right'
                             first_target_zone_entered = True
+                            
+                            if 3.0*fps < SCREEN_DELAY:
+                                prescreen_right_screen_entries = 1
+                                prescreen_first_screen_zone = 'right'
+                                prescreen_first_screen_zone_entered = True
+                            elif 3.0*fps < SCREEN_DELAY+critical_dur_secs:
+                                postscreen_critical_right_screen_entries = 1
+                                postscreen_critical_first_screen_zone = 'right'
+                                postscreen_critical_first_screen_zone_entered = True                              
                         else:
                             #left_target_frame_cnt += frames_b4_acq
                             left_target_entries = 1 #should this be counted
                             #print 'Counting first ' + str(frames_b4_acq) + ' frames to the left target zone'
                             first_target_zone = 'left'
                             first_target_zone_entered = True
+                            
+                            if 3.0*fps < SCREEN_DELAY:
+                                prescreen_left_screen_entries = 1
+                                prescreen_first_screen_zone = 'left'
+                                prescreen_first_screen_zone_entered = True                            
+                            elif 3.0*fps < SCREEN_DELAY+critical_dur_secs:
+                                postscreen_critical_left_screen_entries = 1
+                                postscreen_critical_first_screen_zone = 'left'
+                                postscreen_critical_first_screen_zone_entered = True
 
                 if not tracking:
                     tracking = True
@@ -1030,6 +1097,11 @@ class Tracker:
                     center_frame_cnt += (frames_not_tracking/2)
 
                 frames_not_tracking = frames_not_tracking/2
+                
+                #if faux_counter*spf < SCREEN_DELAY:
+                #    prescreen_frames_not_tracking = prescreen_frames_not_tracking/2
+                #elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
+                #    postscreen_critical_frames_not_tracking = postscreen_critical_frames_not_tracking/2
 
                 # check if fish is in left target
                 if center[0] < left_target_x and \
@@ -1039,12 +1111,30 @@ class Tracker:
                     # check if left target zone entry occurred
                     if not in_left_target:
                         left_target_entries += 1
+                        
+                        if faux_counter*spf < SCREEN_DELAY:
+                            prescreen_left_screen_entries += 1
+                        elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
+                            postscreen_critical_left_screen_entries += 1
+                            #print '!!!Postscreen Critical Left Target Entry!!!' + str(postscreen_critical_left_screen_entries)
 
                     left_target_frame_cnt += (frames_not_tracking + 1)
                     in_left_target = True
                     if not first_target_zone_entered:
                         first_target_zone = 'left'
                         first_target_zone_entered = True
+                        
+                    if faux_counter*spf < SCREEN_DELAY:
+                        prescreen_left_screen_frame_cnt += (prescreen_frames_not_tracking + 1)
+                        if not prescreen_first_screen_zone_entered:
+                            prescreen_first_screen_zone = 'left'
+                            prescreen_first_screen_zone_entered = True
+                    elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
+                        postscreen_critical_left_screen_frame_cnt += (postscreen_critical_frames_not_tracking + 1)
+                        if not postscreen_critical_first_screen_zone_entered:
+                            postscreen_critical_first_screen_zone = 'left'
+                            postscreen_critical_first_screen_zone_entered = True
+                        
                 else:
                     in_left_target = False
 
@@ -1056,22 +1146,55 @@ class Tracker:
                     # check if right target zone entry occurred
                     if not in_right_target:
                         right_target_entries += 1
+                        
+                        if faux_counter*spf < SCREEN_DELAY:
+                            prescreen_right_screen_entries += 1
+                        elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
+                            postscreen_critical_right_screen_entries += 1
+                            #print '!!!Postscreen Critical Right Target Entry!!!' + str(postscreen_critical_right_screen_entries)
 
                     right_target_frame_cnt += (frames_not_tracking + 1)
                     in_right_target = True
                     if not first_target_zone_entered:
                         first_target_zone = 'right'
                         first_target_zone_entered = True
+                        
+                    if faux_counter*spf < SCREEN_DELAY:
+                        prescreen_right_screen_frame_cnt += (prescreen_frames_not_tracking + 1)
+                        if not prescreen_first_screen_zone_entered:
+                            prescreen_first_screen_zone = 'right'
+                            prescreen_first_screen_zone_entered = True
+                    elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
+                        postscreen_critical_right_screen_frame_cnt += (postscreen_critical_frames_not_tracking + 1)
+                        if not postscreen_critical_first_screen_zone_entered:
+                            postscreen_critical_first_screen_zone = 'right'
+                            postscreen_critical_first_screen_zone_entered = True
                 else:
                     in_right_target = False
 
                 # check left target latency (if still applicable)
                 if left_target_entries == 0:
                     left_target_latency_frame_cnt += (frames_not_tracking + 1)
+                    
+                if prescreen_left_screen_entries == 0 and \
+                   faux_counter*spf < SCREEN_DELAY:
+                    prescreen_left_screen_latency_frame_cnt += (prescreen_frames_not_tracking + 1)
+                elif postscreen_critical_left_screen_entries == 0 and \
+                     faux_counter*spf < SCREEN_DELAY+critical_dur_secs and \
+                     faux_counter*spf >= SCREEN_DELAY:
+                    postscreen_critical_left_screen_latency_frame_cnt += (postscreen_critical_frames_not_tracking + 1)
 
                 # check right target latency (if still applicable)
                 if right_target_entries == 0:
                     right_target_latency_frame_cnt += (frames_not_tracking + 1)
+                    
+                if prescreen_right_screen_entries == 0 and \
+                   faux_counter*spf < SCREEN_DELAY:
+                    prescreen_right_screen_latency_frame_cnt += (prescreen_frames_not_tracking + 1)
+                elif postscreen_critical_right_screen_entries == 0 and \
+                     faux_counter*spf < SCREEN_DELAY+critical_dur_secs and \
+                     faux_counter*spf >= SCREEN_DELAY:
+                    postscreen_critical_right_screen_latency_frame_cnt += (postscreen_critical_frames_not_tracking + 1)
 
                 # check if in upper mirror zone
                 if center[0] > upper_mirror_x1 and center[0] < upper_mirror_x2 and center[1] < upper_mirror_y:
@@ -1214,6 +1337,8 @@ class Tracker:
                 cv2.circle(frame,center,4,[0,0,255],-1)
 
                 frames_not_tracking = 0
+                postscreen_critical_frames_not_tracking = 0
+                prescreen_frames_not_tracking = 0
 
             else:
                 if frames_not_tracking > SECS_B4_LOST*fps:
@@ -1232,8 +1357,25 @@ class Tracker:
 
                     tracking = False
 
-                frames_not_tracking += 1
-
+                frames_not_tracking += 1                    
+                
+                if faux_counter*spf < SCREEN_DELAY:
+                    prescreen_frames_not_tracking += 1
+                elif faux_counter*spf == SCREEN_DELAY and in_left_target:
+                    prescreen_left_screen_frame_cnt += prescreen_frames_not_tracking
+                    prescreen_frames_not_tracking = 0
+                elif faux_counter*spf == SCREEN_DELAY and in_right_target:
+                    prescreen_right_screen_frame_cnt += prescreen_frames_not_tracking
+                    prescreen_frames_not_tracking = 0
+                elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
+                    postscreen_critical_frames_not_tracking += 1
+                elif faux_counter*spf == SCREEN_DELAY+critical_dur_secs and in_left_target:
+                    postscreen_critical_left_screen_frame_cnt += postscreen_critical_frames_not_tracking
+                    postscreen_critical_frames_not_tracking = 0
+                elif faux_counter*spf == SCREEN_DELAY+critical_dur_secs and in_right_target:
+                    postscreen_critical_right_screen_frame_cnt += postscreen_critical_frames_not_tracking
+                    postscreen_critical_frames_not_tracking = 0
+                    
                 if not acquired:
                     frames_b4_acq += 1
 
@@ -1307,6 +1449,56 @@ class Tracker:
             if k == 27:
                 break
 
+            if faux_counter*spf == SCREEN_DELAY - 1:
+                if in_center:
+                    end_of_prescreen_zone = 'center'
+                elif in_left_target:
+                    end_of_prescreen_zone = 'left screen'
+                elif in_ll_thigmo:
+                    end_of_prescreen_zone = 'lower left thigmo'
+                elif in_lower_mirror:
+                    end_of_prescreen_zone = 'lower mirror'
+                elif in_lr_thigmo:
+                    end_of_prescreen_zone = 'lower right thigmo'
+                elif in_right_target:
+                    end_of_prescreen_zone = 'right screen'
+                elif in_ul_thigmo:
+                    end_of_prescreen_zone = 'upper left thigmo'
+                elif in_upper_mirror:
+                    end_of_prescreen_zone = 'upper mirror'
+                elif in_ur_thigmo:
+                    end_of_prescreen_zone = 'upper right thigmo'
+            elif faux_counter*spf == SCREEN_DELAY + 1:
+                if in_center:
+                    start_of_postscreen_zone = 'center'
+                elif in_left_target:
+                    start_of_postscreen_zone = 'left screen'
+                elif in_ll_thigmo:
+                    start_of_postscreen_zone = 'lower left thigmo'
+                elif in_lower_mirror:
+                    start_of_postscreen_zone = 'lower mirror'
+                elif in_lr_thigmo:
+                    start_of_postscreen_zone = 'lower right thigmo'
+                elif in_right_target:
+                    start_of_postscreen_zone = 'right screen'
+                elif in_ul_thigmo:
+                    start_of_postscreen_zone = 'upper left thigmo'
+                elif in_upper_mirror:
+                    start_of_postscreen_zone = 'upper mirror'
+                elif in_ur_thigmo:
+                    start_of_postscreen_zone = 'upper right thigmo'                
+            
+            if faux_counter*spf == SCREEN_DELAY:
+                if prescreen_right_screen_entries > 0:
+                    prescreen_right_screen_latency_secs = '{:.2f}'.format(prescreen_right_screen_latency_frame_cnt*spf)
+                if prescreen_left_screen_entries > 0:
+                    prescreen_left_screen_latency_secs = '{:.2f}'.format(prescreen_left_screen_latency_frame_cnt*spf)
+            elif faux_counter*spf == SCREEN_DELAY+critical_dur_secs or faux_counter*spf == TOTAL_TIME:
+                if postscreen_critical_right_screen_entries > 0:
+                    postscreen_critical_right_screen_latency_secs = '{:.2f}'.format(postscreen_critical_right_screen_latency_frame_cnt*spf)
+                if postscreen_critical_left_screen_entries > 0:
+                    postscreen_critical_left_screen_latency_secs = '{:.2f}'.format(postscreen_critical_left_screen_latency_frame_cnt*spf)
+                
             if acquired:
                 counter+=1
 
@@ -1324,14 +1516,14 @@ class Tracker:
             if (trained_high and leftside_high) or (trained_low and not leftside_high):
                 if left_target_entries == 0:
                     reinforced_latency = 'NA'
-                else
+                else:
                     reinforced_latency = left_target_latency_frame_cnt * spf
                 time_in_reinforced_target = left_target_frame_cnt * spf
                 num_entries_reinforced = left_target_entries
                 if left_target_frame_cnt == 0:
                     prop_time_reinforced = 0.0
                 else:
-                    prop_time_reinforced = (float(left_target_frame_cnt) / counter) * 100.0
+                    prop_time_reinforced = (float(left_target_frame_cnt) / faux_counter) * 100.0
                 if first_target_zone == 'left':
                     first_target_zone = 'Reinforced'
                 elif first_target_zone == 'right':
@@ -1346,7 +1538,7 @@ class Tracker:
                 if right_target_frame_cnt == 0:
                     prop_time_reinforced = 0.0
                 else:
-                    prop_time_reinforced = (float(right_target_frame_cnt) / counter) * 100.0
+                    prop_time_reinforced = (float(right_target_frame_cnt) / faux_counter) * 100.0
                 if first_target_zone == 'right':
                     first_target_zone = 'Reinforced'
                 elif first_target_zone == 'left':
@@ -1367,7 +1559,7 @@ class Tracker:
                 if left_target_frame_cnt == 0:
                     prop_time_non_reinforced = 0.0
                 else:
-                    prop_time_non_reinforced = (float(left_target_frame_cnt) / counter) * 100.0
+                    prop_time_non_reinforced = (float(left_target_frame_cnt) / faux_counter) * 100.0
             elif (trained_low and rightside_high) or (trained_high and not rightside_high):
                 if right_target_entries == 0:
                     non_reinforced_latency = 'NA'
@@ -1378,7 +1570,7 @@ class Tracker:
                 if right_target_frame_cnt == 0:
                     prop_time_non_reinforced = 0.0
                 else:
-                    prop_time_non_reinforced = (float(right_target_frame_cnt) / counter) * 100.0
+                    prop_time_non_reinforced = (float(right_target_frame_cnt) / faux_counter) * 100.0
             print 'Non-Reinforced Target Zone Latency: ' + str(non_reinforced_latency) +  ' secs'
             print 'Time in Non-Reinforced Target Zone: ' + str(time_in_non_reinforced_target) +  ' secs'
             print 'Number of Entries into Non-Reinforced Target Zone: ' + str(num_entries_non_reinforced)
@@ -1390,7 +1582,7 @@ class Tracker:
         if (upper_mirror_frame_cnt + lower_mirror_frame_cnt) == 0:
             prop_time_mirror = 0.0
         else:
-            prop_time_mirror = (float(upper_mirror_frame_cnt + lower_mirror_frame_cnt) / counter) * 100.0
+            prop_time_mirror = (float(upper_mirror_frame_cnt + lower_mirror_frame_cnt) / faux_counter) * 100.0
         print 'Proportion time in Mirror Zones: ' + str(prop_time_mirror) + '%'
 
         # Thigmotaxis metrics
@@ -1402,7 +1594,7 @@ class Tracker:
         if thigmo_frame_cnt == 0:
             prop_time_thigmo = 0.0
         else:
-            prop_time_thigmo = (float(thigmo_frame_cnt) / counter) * 100.0
+            prop_time_thigmo = (float(thigmo_frame_cnt) / faux_counter) * 100.0
         print 'Proportion time in Thigmotaxis Zones: ' + str(prop_time_thigmo) + '%'
 
         if (100 - (prop_time_reinforced+prop_time_non_reinforced+prop_time_mirror+prop_time_thigmo)) == 0:
@@ -1411,7 +1603,7 @@ class Tracker:
             prop_time_center = 100 - (prop_time_reinforced+prop_time_non_reinforced+prop_time_mirror+prop_time_thigmo)
         print 'Proportion time in Center Zone: ' + str(prop_time_center) + '%'
 
-        total_time = counter * spf
+        total_time = faux_counter * spf
         time_in_center = total_time - (time_in_reinforced_target-time_in_non_reinforced_target-time_in_mirror-thigmotaxis_score)
         print 'Time in Center Zone: ' + str(time_in_center) + ' secs'
 
@@ -1420,7 +1612,7 @@ class Tracker:
         if (ul_corner_frame_cnt + ur_corner_frame_cnt + ll_corner_frame_cnt + lr_corner_frame_cnt) == 0:
             prop_corners = 0.0
         else:
-            prop_corners = (float(ul_corner_frame_cnt + ur_corner_frame_cnt + ll_corner_frame_cnt + lr_corner_frame_cnt) / counter) * 100.0
+            prop_corners = (float(ul_corner_frame_cnt + ur_corner_frame_cnt + ll_corner_frame_cnt + lr_corner_frame_cnt) / faux_counter) * 100.0
         print 'Time in Corners:' + str(time_in_corners) + ' secs'
         print 'Proportion time in Corners: ' + str(prop_corners) + '%'
 
@@ -1455,7 +1647,23 @@ class Tracker:
                                 'UL.Thigmo.Secs', 'LL.Thigmo.Secs', \
                                 'UR.Thigmo.Secs', 'LR.Thigmo.Secs', \
                                 'Center.Secs', 'Upper.Mirror.Secs', \
-                                'Lower.Mirror.Secs', 'Total.Secs'))
+                                'Lower.Mirror.Secs', 'Total.Secs', \
+                                'Prescreen.First.Screen.Zone', \
+                                'Prescreen.Left.Screen.Latency.Secs', \
+                                'Prescreen.Right.Screen.Latency.Secs', \
+                                'Prescreen.Left.Screen.Time.Secs', \
+                                'Prescreen.Right.Screen.Time.Secs', \
+                                'Prescreen.Left.Screen.Entries', \
+                                'Prescreen.Right.Screen.Entries', \
+                                'Postscreen.Critical.First.Screen.Zone', \
+                                'Postscreen.Critical.Left.Screen.Latency.Secs', \
+                                'Postscreen.Critical.Right.Screen.Latency.Secs', \
+                                'Postscreen.Critical.Left.Screen.Time.Secs', \
+                                'Postscreen.Critical.Right.Screen.Time.Secs', \
+                                'Postscreen.Critical.Left.Screen.Entries', \
+                                'Postscreen.Critical.Right.Screen.Entries', \
+                                'End.Of.Prescreen.Zone', \
+                                'Start.Of.Postscreen.Zone'))
 
         # Open csv file in append mode
         with open(csv_filename, 'a') as f:
@@ -1482,7 +1690,20 @@ class Tracker:
                              '{:.2f}'.format(center_frame_cnt*spf), \
                              '{:.2f}'.format(upper_mirror_frame_cnt*spf), \
                              '{:.2f}'.format(lower_mirror_frame_cnt*spf), \
-                             '{:.2f}'.format((left_target_frame_cnt+right_target_frame_cnt+ul_thigmo_frame_cnt+ll_thigmo_frame_cnt+ur_thigmo_frame_cnt+lr_thigmo_frame_cnt+center_frame_cnt+lower_mirror_frame_cnt+upper_mirror_frame_cnt)*spf)))
+                             '{:.2f}'.format((left_target_frame_cnt+right_target_frame_cnt+ul_thigmo_frame_cnt+ll_thigmo_frame_cnt+ur_thigmo_frame_cnt+lr_thigmo_frame_cnt+center_frame_cnt+lower_mirror_frame_cnt+upper_mirror_frame_cnt)*spf), \
+                             prescreen_first_screen_zone, \
+                             prescreen_left_screen_latency_secs, \
+                             prescreen_right_screen_latency_secs, \
+                             '{:.2f}'.format(prescreen_left_screen_frame_cnt*spf), \
+                             '{:.2f}'.format(prescreen_right_screen_frame_cnt*spf), \
+                             prescreen_left_screen_entries, prescreen_right_screen_entries, \
+                             postscreen_critical_first_screen_zone, \
+                             postscreen_critical_left_screen_latency_secs, \
+                             postscreen_critical_right_screen_latency_secs, \
+                             '{:.2f}'.format(postscreen_critical_left_screen_frame_cnt*spf), \
+                             '{:.2f}'.format(postscreen_critical_right_screen_frame_cnt*spf), \
+                             postscreen_critical_left_screen_entries, postscreen_critical_right_screen_entries, \
+                             end_of_prescreen_zone, start_of_postscreen_zone))
         print 'Done with ' + csv_filename + '!'
         print '#' * 45
 
@@ -1508,7 +1729,7 @@ class Tracker:
             writer = csv.writer(f)
 
             # write the data (limit all decimals to 2 digits)
-            writer.writerow((filename, counter,  '{:.2f}'.format(counter*spf), \
+            writer.writerow((filename, faux_counter,  '{:.2f}'.format(faux_counter*spf), \
                             lost_track_frame_cnt, times_lost_track, \
                             frames_b4_acq, frames_since_last_track))
         print 'Done with ' + tracker_log + '!'
@@ -1518,8 +1739,8 @@ class Tracker:
         # first calculate realized fps
         print '#' * 45
         print 'Some Useful stuff...'
-        print 'Frame count: ' + str(counter)
-        print 'Total Video Time: ' + str(counter*spf) + ' secs'
+        print 'Frame count: ' + str(faux_counter)
+        print 'Total Video Time: ' + str(faux_counter*spf) + ' secs'
         print 'Lost track frame count: ' + str(lost_track_frame_cnt)
         print 'Times lost track: ' + str(times_lost_track)
         print 'Frames before acquisition: ' + str(frames_b4_acq)
