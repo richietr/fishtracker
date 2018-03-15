@@ -24,7 +24,7 @@
   "FISH_AREA_MAX_PIXELS" : "2800",
   "FISH_HEIGHT_MIN_PIXELS" : "30",
   "FISH_HEIGHT_MAX_PIXELS" : "200",
-  "DIFF_THRESHOLD" : "15",
+  "DIFF_THRESHOLD" : "20",
   "Isadora" : {
     "TANK_UPPER_LEFT_X" : "85",
     "TANK_UPPER_LEFT_Y" : "95",

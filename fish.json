@@ -824,5 +824,82 @@
         "node": "ceres",
         "sex": "male",
         "species": "gambusia"
+    },
+    "4cyan4lightbluefilters1": {
+        "cam_node": "mercury",
+        "fishstandardlength": "201",
+        "node": "venus",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "4cyan4lightbluefilters2": {
+        "cam_node": "mercury",
+        "fishstandardlength": "201",
+        "node": "venus",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "CYANLIGHTBLUE1": {
+        "cam_node": "mercury",
+        "fishstandardlength": "201",
+        "node": "venus",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "Cyan+LightBlueMercuryJan30": {
+        "cam_node": "mercury",
+        "fishstandardlength": "201",
+        "node": "venus",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "4cyan4lightblue88": {
+        "cam_node": "mercury",
+        "fishstandardlength": "201",
+        "node": "venus",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "4cyan4lightblue99": {
+        "cam_node": "mercury",
+        "fishstandardlength": "201",
+        "node": "venus",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "4cyan4lightblue00": {
+        "cam_node": "mercury",
+        "fishstandardlength": "201",
+        "node": "venus",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "4cyan4lightblue22": {
+        "cam_node": "mercury",
+        "fishstandardlength": "201",
+        "node": "venus",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "4cyan4lightblue33": {
+        "cam_node": "mercury",
+        "fishstandardlength": "201",
+        "node": "venus",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "4cyan4lightblue44": {
+        "cam_node": "mercury",
+        "fishstandardlength": "201",
+        "node": "venus",
+        "sex": "male",
+        "species": "gambusia"
+    },
+    "4cyan4lightblue1": {
+        "cam_node": "mercury",
+        "fishstandardlength": "201",
+        "node": "venus",
+        "sex": "male",
+        "species": "gambusia"
     }
 }
