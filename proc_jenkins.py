@@ -64,7 +64,7 @@ for name in os.listdir(share_base_loc):
 #print proc_jenkins_config_json
 if proc_jenkins_config_json is not None:
     if "exclude_rounds" in proc_jenkins_config_json:
-        rounds_to_exclude = eval(proc_jenkins_config_json["exclude_rounds"])
+        rounds_to_exclude =proc_jenkins_config_json["exclude_rounds"]
 #print rounds_to_exclude
 
 for tmp in rounds_to_exclude:
@@ -118,7 +118,7 @@ for round in rounds_to_proc:
                     #path_parts = path_strip.split('\\')
                     filename = path_parts[len(path_parts)-1]
                     filename_parts = filename.split('_')
-                    
+
                     if len(filename_parts) is 5:
                         print "Not processing because video is a record only video: " + vid
                         skip = True
@@ -135,8 +135,8 @@ for round in rounds_to_proc:
                         that_stimulus = filename_parts[8]
                         proportion = filename_parts[9]
                         fedside = filename_parts[10]
-                        correctside = filename_parts[11]                                            
-                        
+                        correctside = filename_parts[11]
+
                         if int(day) < 9 or fedside != 'none':
                             print "Not processing because video is not a testing video: " + vid
                             skip = True

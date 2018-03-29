@@ -64,7 +64,7 @@ for name in os.listdir(share_base_loc):
 #print proc_jenkins_config_json
 if proc_jenkins_config_json is not None:
     if "exclude_rounds" in proc_jenkins_config_json:
-        rounds_to_exclude = eval(proc_jenkins_config_json["exclude_rounds"])
+        rounds_to_exclude = proc_jenkins_config_json["exclude_rounds"]
 #print rounds_to_exclude
 
 for tmp in rounds_to_exclude:
