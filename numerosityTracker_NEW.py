@@ -386,6 +386,8 @@ class Tracker:
 
     def run_numerosity_tracker(self):
 
+        GEN_OUTPUT_VID = False
+
         #line1 =[(66,231),(1218,231)]
         #line2 =[(66,292),(1218,292)]
         #line3 =[(66,734),(1218,724)]
@@ -437,8 +439,6 @@ class Tracker:
         correctside = filename_parts[11]
 
         # defaults
-        gen_cowlog = False
-        gen_tracker_video = False
         DIFF_THRESHOLD = 15
         FISH_AREA_MIN_PIXELS = 200
         FISH_AREA_MAX_PIXELS = 2000
@@ -495,22 +495,12 @@ class Tracker:
                 FREEZE_WINDOW_LEN = int(config_json['FREEZE_CIRCLE_DIAMETER_PIXELS'])
             if 'SECS_BEFORE_LOST' in config_json:
                 SECS_B4_LOST = int(config_json['SECS_BEFORE_LOST'])
-            if 'TRACKER_VIDEO_OUTPUT' in config_json:
-                if config_json['TRACKER_VIDEO_OUTPUT'] == 'TRUE':
-                    gen_tracker_video = True
-                else:
-                    gen_tracker_video = False
-            if 'COWLOG_OUTPUT' in config_json:
-                if config_json['COWLOG_OUTPUT'] == 'TRUE':
-                    gen_cowlog = True
-                else:
-                    gen_cowlog = False
             if 'SCREEN_DELAY_SECS' in config_json:
                 SCREEN_DELAY = int(config_json['SCREEN_DELAY_SECS'])
             if 'TESTING_CRITICAL_DUR_SECS' in config_json:
                 TESTING_CRITICAL_DUR_SECS = int(config_json['TESTING_CRITICAL_DUR_SECS'])
             if 'TRAINING_CRITICAL_DUR_SECS' in config_json:
-                TRAINING_CRITICAL_DUR_SECS = int(config_json['TRAINING_CRITICAL_DUR_SECS'])                
+                TRAINING_CRITICAL_DUR_SECS = int(config_json['TRAINING_CRITICAL_DUR_SECS'])
             if 'FEED_DELAY_SECS' in config_json:
                 FEED_DELAY = int(config_json['FEED_DELAY_SECS'])
             if 'FEED_DURATION_SECS' in config_json:
@@ -576,8 +566,6 @@ class Tracker:
         print '\n', '#' * 45
         print 'TRACKER PARAMETERS: '
         print '#' * 45
-        print 'gen_cowlog=' + str(gen_cowlog)
-        print 'gen_tracker_video=' + str(gen_tracker_video)
         print 'DIFF_THRESHOLD=' + str(DIFF_THRESHOLD)
         print 'FISH_AREA_MIN_PIXELS=' + str(FISH_AREA_MIN_PIXELS)
         print 'FISH_AREA_MAX_PIXELS=' + str(FISH_AREA_MAX_PIXELS)
@@ -642,14 +630,13 @@ class Tracker:
         csv_filename = 'numerosity_log.csv'
         freeze_log = 'num_freeze_log.csv'
         tracker_log = 'num_tracker_log.csv'
-        
-        if gen_cowlog:
-            cowlog_filename = os.path.splitext(filename)[0] + '_cowlog.csv'
-    
-            # Open csv file in write mode and add header
-            cowlog_file = open(cowlog_filename, 'w')
-            cowlog_writer = csv.writer(cowlog_file)
-            cowlog_writer.writerow(('time', 'code', 'class'))
+
+        cowlog_filename = os.path.splitext(filename)[0] + '_cowlog.csv'
+
+        # Open csv file in write mode and add header
+        cowlog_file = open(cowlog_filename, 'w')
+        cowlog_writer = csv.writer(cowlog_file)
+        cowlog_writer.writerow(('time', 'code', 'class'))
 
         counter = 1
         faux_counter = 1
@@ -657,7 +644,7 @@ class Tracker:
         trained_low = False
         leftside_high = False
         rightside_high = False
-        
+
         first_target_zone = 'none'
         first_target_zone_entered = False
         left_target_frame_cnt = 0
@@ -666,7 +653,7 @@ class Tracker:
         left_target_entries = 0
         right_target_latency_frame_cnt = 0
         right_target_entries = 0
-        
+
         prescreen_first_screen_zone = 'none'
         prescreen_first_screen_zone_entered = False
         prescreen_left_screen_frame_cnt = 0
@@ -675,7 +662,7 @@ class Tracker:
         prescreen_left_screen_entries = 0
         prescreen_right_screen_latency_frame_cnt = 0
         prescreen_right_screen_entries = 0
-        
+
         postscreen_critical_first_screen_zone = 'none'
         postscreen_critical_first_screen_zone_entered = False
         postscreen_critical_left_screen_frame_cnt = 0
@@ -690,7 +677,7 @@ class Tracker:
         prescreen_right_screen_latency_secs = 'NA'
         postscreen_critical_left_screen_latency_secs = 'NA'
         postscreen_critical_right_screen_latency_secs = 'NA'
-        
+
         last_known_zone = 'NA'
         in_left_target = False
         in_right_target = False
@@ -881,7 +868,7 @@ class Tracker:
         #path = os.path.normpath(path)
         cap = cv2.VideoCapture(path)
         if not cap.isOpened():
-            print 'ERROR> Could not open :', path
+            print 'ERROR> Could not open :',path
 
         # get some info about the video
         length = int(cap.get(cv2.cv.CV_CAP_PROP_FRAME_COUNT))
@@ -910,13 +897,14 @@ class Tracker:
         # seconds per frame
         spf = 1.0/fps
 
-        NUM_FRAMES_TO_SKIP = FEED_DELAY * fps
-        NUM_FRAMES_TO_TRIM = (TOTAL_TIME-FEED_DURATION) * fps
+        NUM_FRAMES_TO_SKIP = SCREEN_DELAY * fps
+        #NUM_FRAMES_TO_TRIM = (TOTAL_TIME-FEED_DURATION) * fps
+        NUM_FRAMES_TO_TRIM = 0
 
         # Only process up to TOTAL_TIME
         if length > fps*TOTAL_TIME:
             length = fps*TOTAL_TIME
-            
+
         # grab the 20th frame for drawing the rectangle
         cap = cv2.VideoCapture(path)
         if not cap.isOpened():
@@ -930,6 +918,13 @@ class Tracker:
         bm_initial = blur_and_mask(background, lower_bound, upper_bound, left_bound, right_bound, vidHeight, vidWidth)
         cv2.imwrite('background.jpg', background)
 
+        ## create a second background of before the screen turns on ##
+        #cap = cv2.VideoCapture(path)
+        #prescreen_background = get_background_image(cap,((SCREEN_DELAY-1)*fps)/1,(SCREEN_DELAY-1)*fps, 0, 0)
+        #prescreen_bm_initial = blur_and_mask(prescreen_background, lower_bound, upper_bound, left_bound, right_bound, vidHeight, vidWidth)
+        #cv2.imwrite('prescreen_background.jpg', prescreen_background)
+
+
         startOfTrial = time.time()
         cap = cv2.VideoCapture(path)
 
@@ -939,6 +934,10 @@ class Tracker:
 
         first_pass = True
         prev_center = None
+
+        # TEMP
+        for i in range(0, int(NUM_FRAMES_TO_SKIP)):
+            cap.read()
 
         print '\n\nProcessing...\n'
         while(cap.isOpened() and faux_counter*spf <= TOTAL_TIME):
@@ -957,19 +956,22 @@ class Tracker:
                     cap.read()
                     faux_counter += 1
                     frames_not_tracking += 1 # should this be counted?
-                    
+
                     if i*spf <= SCREEN_DELAY:
                         prescreen_frames_not_tracking += 1
                     elif i*spf <= SCREEN_DELAY+critical_dur_secs:
                         postscreen_critical_frames_not_tracking += 1
-                    
+
             ret,frame = cap.read()
 
             if ret == False:
                 print 'ERROR> Did not read frame from video file'
                 break
 
-            if faux_counter == 1 and gen_tracker_video:
+            # TEMP
+            if faux_counter == 1 and GEN_OUTPUT_VID:
+                #height , width , layers =  frame.shape
+                #video = cv2.VideoWriter(os.path.splitext(filename)[0] + '_tracker.avi',-1,1,(width,height))
                 video = cv2.VideoWriter(os.path.splitext(filename)[0] + '_tracker.avi',cv2.cv.CV_FOURCC(*'MJPG'),25,(vidWidth,vidHeight),True)
 
 
@@ -977,6 +979,10 @@ class Tracker:
             bm = blur_and_mask(frame, lower_bound, upper_bound, left_bound, right_bound, vidHeight, vidWidth)
 
             # find difference between frame and background
+            #if faux_counter*spf < FEED_DELAY:
+            #    difference = cv2.absdiff(bm, prescreen_bm_initial)
+            #else:
+            #    difference = cv2.absdiff(bm, bm_initial)
             difference = cv2.absdiff(bm, bm_initial)
             #if counter < (FEED_DELAY*fps) or counter > ((FEED_DELAY+FEED_DURATION)*fps):
             #   #difference = apply_mask(difference, TANK_UPPER_LEFT_Y+EDGE_BUFFER, TANK_LOWER_LEFT_Y-EDGE_BUFFER, left_target_x, right_target_x, vidHeight, vidWidth)
@@ -1042,7 +1048,7 @@ class Tracker:
                             #print 'Counting first ' + str(frames_b4_acq) + ' frames to the right target zone'
                             first_target_zone = 'right'
                             first_target_zone_entered = True
-                            
+
                             if 3.0*fps < SCREEN_DELAY:
                                 prescreen_right_screen_entries = 1
                                 prescreen_first_screen_zone = 'right'
@@ -1050,22 +1056,26 @@ class Tracker:
                             elif 3.0*fps < SCREEN_DELAY+critical_dur_secs:
                                 postscreen_critical_right_screen_entries = 1
                                 postscreen_critical_first_screen_zone = 'right'
-                                postscreen_critical_first_screen_zone_entered = True                              
+                                postscreen_critical_first_screen_zone_entered = True
+
+                            #cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'right screen', '1'))
                         else:
                             #left_target_frame_cnt += frames_b4_acq
                             left_target_entries = 1 #should this be counted
                             #print 'Counting first ' + str(frames_b4_acq) + ' frames to the left target zone'
                             first_target_zone = 'left'
                             first_target_zone_entered = True
-                            
+
                             if 3.0*fps < SCREEN_DELAY:
                                 prescreen_left_screen_entries = 1
                                 prescreen_first_screen_zone = 'left'
-                                prescreen_first_screen_zone_entered = True                            
+                                prescreen_first_screen_zone_entered = True
                             elif 3.0*fps < SCREEN_DELAY+critical_dur_secs:
                                 postscreen_critical_left_screen_entries = 1
                                 postscreen_critical_first_screen_zone = 'left'
                                 postscreen_critical_first_screen_zone_entered = True
+
+                            #cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'left screen', '1'))
 
                 if not tracking:
                     tracking = True
@@ -1127,7 +1137,7 @@ class Tracker:
                     center_frame_cnt += (frames_not_tracking/2)
 
                 frames_not_tracking = frames_not_tracking/2
-                
+
                 #if faux_counter*spf < SCREEN_DELAY:
                 #    prescreen_frames_not_tracking = prescreen_frames_not_tracking/2
                 #elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
@@ -1141,16 +1151,16 @@ class Tracker:
                     # check if left target zone entry occurred
                     if not in_left_target:
                         left_target_entries += 1
-                        
+
                         if faux_counter*spf < SCREEN_DELAY:
                             prescreen_left_screen_entries += 1
                         elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
                             postscreen_critical_left_screen_entries += 1
                             #print '!!!Postscreen Critical Left Target Entry!!!' + str(postscreen_critical_left_screen_entries)
 
-                    if last_known_zone is not 'left screen' and gen_cowlog:
+                    if last_known_zone is not 'left screen':
                         # Add to cowlog
-                        cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'left screen', '1'))
+                        cowlog_writer.writerow(('{:.2f}'.format((faux_counter*spf)+30), 'left screen', '1'))
 
                     left_target_frame_cnt += (frames_not_tracking + 1)
                     in_left_target = True
@@ -1158,7 +1168,7 @@ class Tracker:
                     if not first_target_zone_entered:
                         first_target_zone = 'left'
                         first_target_zone_entered = True
-                        
+
                     if faux_counter*spf < SCREEN_DELAY:
                         prescreen_left_screen_frame_cnt += (prescreen_frames_not_tracking + 1)
                         if not prescreen_first_screen_zone_entered:
@@ -1169,7 +1179,7 @@ class Tracker:
                         if not postscreen_critical_first_screen_zone_entered:
                             postscreen_critical_first_screen_zone = 'left'
                             postscreen_critical_first_screen_zone_entered = True
-                        
+
                 else:
                     in_left_target = False
 
@@ -1181,24 +1191,24 @@ class Tracker:
                     # check if right target zone entry occurred
                     if not in_right_target:
                         right_target_entries += 1
-                        
+
                         if faux_counter*spf < SCREEN_DELAY:
                             prescreen_right_screen_entries += 1
                         elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
                             postscreen_critical_right_screen_entries += 1
                             #print '!!!Postscreen Critical Right Target Entry!!!' + str(postscreen_critical_right_screen_entries)
 
-                    if last_known_zone is not 'right screen' and gen_cowlog:
+                    if last_known_zone is not 'right screen':
                         # Add to cowlog
-                        cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'right screen', '1'))
-                        
+                        cowlog_writer.writerow(('{:.2f}'.format((faux_counter*spf)+30), 'right screen', '1'))
+
                     right_target_frame_cnt += (frames_not_tracking + 1)
                     in_right_target = True
                     last_known_zone = 'right screen'
                     if not first_target_zone_entered:
                         first_target_zone = 'right'
                         first_target_zone_entered = True
-                        
+
                     if faux_counter*spf < SCREEN_DELAY:
                         prescreen_right_screen_frame_cnt += (prescreen_frames_not_tracking + 1)
                         if not prescreen_first_screen_zone_entered:
@@ -1215,7 +1225,7 @@ class Tracker:
                 # check left target latency (if still applicable)
                 if left_target_entries == 0:
                     left_target_latency_frame_cnt += (frames_not_tracking + 1)
-                    
+
                 if prescreen_left_screen_entries == 0 and \
                    faux_counter*spf < SCREEN_DELAY:
                     prescreen_left_screen_latency_frame_cnt += (prescreen_frames_not_tracking + 1)
@@ -1227,7 +1237,7 @@ class Tracker:
                 # check right target latency (if still applicable)
                 if right_target_entries == 0:
                     right_target_latency_frame_cnt += (frames_not_tracking + 1)
-                    
+
                 if prescreen_right_screen_entries == 0 and \
                    faux_counter*spf < SCREEN_DELAY:
                     prescreen_right_screen_latency_frame_cnt += (prescreen_frames_not_tracking + 1)
@@ -1239,12 +1249,12 @@ class Tracker:
                 # check if in upper mirror zone
                 if center[0] > upper_mirror_x1 and center[0] < upper_mirror_x2 and center[1] < upper_mirror_y:
                     upper_mirror_frame_cnt += (frames_not_tracking + 1)
-                        
+
                     # check if an entry to upper mirror occurred
-                    if last_known_zone is not 'top mirror' and gen_cowlog:
+                    if last_known_zone is not 'top mirror':
                         # Add to cowlog
-                        cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'top mirror', '1'))
-                        
+                        cowlog_writer.writerow(('{:.2f}'.format((faux_counter*spf)+30), 'top mirror', '1'))
+
                     in_upper_mirror = True
                     last_known_zone = 'top mirror'
                 else:
@@ -1253,11 +1263,11 @@ class Tracker:
                 # check if in lower mirror zone
                 if center[0] > lower_mirror_x1 and center[0] < lower_mirror_x2 and center[1] > lower_mirror_y:
                     lower_mirror_frame_cnt += (frames_not_tracking + 1)
-                    
+
                     # check if an entry to lower mirror occurred
-                    if last_known_zone is not 'bottom mirror' and gen_cowlog:
+                    if last_known_zone is not 'bottom mirror':
                         # Add to cowlog
-                        cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'bottom mirror', '1'))
+                        cowlog_writer.writerow(('{:.2f}'.format((faux_counter*spf)+30), 'bottom mirror', '1'))
 
                     in_lower_mirror = True
                     last_known_zone = 'bottom mirror'
@@ -1267,12 +1277,12 @@ class Tracker:
                 # check if in upper left thigmotaxis zone
                 if center[0] > thigmo_ul_x1 and center[0] < thigmo_ul_x2 and center[1] < thigmo_upper_y:
                     ul_thigmo_frame_cnt += (frames_not_tracking + 1)
-                    
+
                     # check if an entry to upper left thigmo occurred
-                    if last_known_zone is not 'top left thigmo' and gen_cowlog:
+                    if last_known_zone is not 'top left thigmo':
                         # Add to cowlog
-                        cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'top left thigmo', '1'))
-                        
+                        cowlog_writer.writerow(('{:.2f}'.format((faux_counter*spf)+30), 'top left thigmo', '1'))
+
                     in_ul_thigmo = True
                     last_known_zone = 'top left thigmo'
                 else:
@@ -1281,11 +1291,11 @@ class Tracker:
                 # check if in upper right thigmotaxis zone
                 if center[0] > thigmo_ur_x1 and center[0] < thigmo_ur_x2 and center[1] < thigmo_upper_y:
                     ur_thigmo_frame_cnt += (frames_not_tracking + 1)
-                    
+
                     # check if an entry to upper right thigmo occurred
-                    if last_known_zone is not 'top right thigmo' and gen_cowlog:
+                    if last_known_zone is not 'top right thigmo':
                         # Add to cowlog
-                        cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'top right thigmo', '1'))
+                        cowlog_writer.writerow(('{:.2f}'.format((faux_counter*spf)+30), 'top right thigmo', '1'))
 
                     in_ur_thigmo = True
                     last_known_zone = 'top right thigmo'
@@ -1295,11 +1305,11 @@ class Tracker:
                 # check if in lower left thigmotaxis zone
                 if center[0] > thigmo_ll_x1 and center[0] < thigmo_ll_x2 and center[1] > thigmo_lower_y:
                     ll_thigmo_frame_cnt += (frames_not_tracking + 1)
-                    
+
                     # check if an entry to lower left thigmo occurred
-                    if last_known_zone is not 'bottom left thigmo' and gen_cowlog:
+                    if last_known_zone is not 'bottom left thigmo':
                         # Add to cowlog
-                        cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'bottom left thigmo', '1'))
+                        cowlog_writer.writerow(('{:.2f}'.format((faux_counter*spf)+30), 'bottom left thigmo', '1'))
 
                     in_ll_thigmo = True
                     last_known_zone = 'bottom left thigmo'
@@ -1309,11 +1319,11 @@ class Tracker:
                 # check if in lower right thigmotaxis zone
                 if center[0] > thigmo_lr_x1 and center[0] < thigmo_lr_x2 and center[1] > thigmo_lower_y:
                     lr_thigmo_frame_cnt += (frames_not_tracking + 1)
-                    
+
                     # check if an entry to lower right thigmo occurred
-                    if last_known_zone is not 'bottom right thigmo' and gen_cowlog:
+                    if last_known_zone is not 'bottom right thigmo':
                         # Add to cowlog
-                        cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'bottom right thigmo', '1'))
+                        cowlog_writer.writerow(('{:.2f}'.format((faux_counter*spf)+30), 'bottom right thigmo', '1'))
 
                     in_lr_thigmo = True
                     last_known_zone = 'bottom right thigmo'
@@ -1348,9 +1358,9 @@ class Tracker:
                 if not in_left_target and not in_right_target and not in_ll_corner and not in_lr_corner and not in_ul_corner and not in_ur_corner and not in_ll_thigmo and not in_lr_thigmo and not in_ul_thigmo and not in_ur_thigmo and not in_lower_mirror and not in_upper_mirror:
 
                     # check if an entry to center occurred
-                    if last_known_zone is not 'center' and gen_cowlog:
+                    if last_known_zone is not 'center':
                         # Add to cowlog
-                        cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'center', '1'))
+                        cowlog_writer.writerow(('{:.2f}'.format((faux_counter*spf)+30), 'center', '1'))
 
                     in_center = True
                     last_known_zone = 'center'
@@ -1446,8 +1456,8 @@ class Tracker:
 
                     tracking = False
 
-                frames_not_tracking += 1                    
-                
+                frames_not_tracking += 1
+
                 if faux_counter*spf < SCREEN_DELAY:
                     prescreen_frames_not_tracking += 1
                 elif faux_counter*spf == SCREEN_DELAY and in_left_target:
@@ -1464,7 +1474,7 @@ class Tracker:
                 elif faux_counter*spf == SCREEN_DELAY+critical_dur_secs and in_right_target:
                     postscreen_critical_right_screen_frame_cnt += postscreen_critical_frames_not_tracking
                     postscreen_critical_frames_not_tracking = 0
-                    
+
                 if not acquired:
                     frames_b4_acq += 1
 
@@ -1511,7 +1521,7 @@ class Tracker:
                 cv2.rectangle(frame,(thigmo_lr_x1,thigmo_lower_y),(thigmo_lr_x2,vidHeight),(0,0,255),2)
 
             # switch to True if you want the grid drawn on every frame
-            if False:
+            if True:
                 cv2.rectangle(frame,(0,left_target_y1),(left_target_x,left_target_y2),(0,255,0),2)
                 cv2.rectangle(frame,(right_target_x,right_target_y1),(vidWidth,right_target_y2),(0,255,0),2)
                 cv2.rectangle(frame,(upper_mirror_x1,0),(upper_mirror_x2,upper_mirror_y),(255,0,0),2)
@@ -1529,9 +1539,13 @@ class Tracker:
             if self.show_images:
                 #cv2.imshow('image',frame)
                 cv2.imshow('image', cv2.resize(frame, (0,0), fx=0.5, fy=0.5))
-            
-            if gen_tracker_video:
+
+            # TEMP
+            if GEN_OUTPUT_VID:
                 video.write(frame)
+
+            #if faux_counter == 40*fps:
+            #    cv2.imwrite('test.jpg', frame)
 
             endOfLoop = time.time()
 
@@ -1578,8 +1592,8 @@ class Tracker:
                 elif in_upper_mirror:
                     start_of_postscreen_zone = 'upper mirror'
                 elif in_ur_thigmo:
-                    start_of_postscreen_zone = 'upper right thigmo'                
-            
+                    start_of_postscreen_zone = 'upper right thigmo'
+
             if faux_counter*spf == SCREEN_DELAY:
                 if prescreen_right_screen_entries > 0:
                     prescreen_right_screen_latency_secs = '{:.2f}'.format(prescreen_right_screen_latency_frame_cnt*spf)
@@ -1590,7 +1604,7 @@ class Tracker:
                     postscreen_critical_right_screen_latency_secs = '{:.2f}'.format(postscreen_critical_right_screen_latency_frame_cnt*spf)
                 if postscreen_critical_left_screen_entries > 0:
                     postscreen_critical_left_screen_latency_secs = '{:.2f}'.format(postscreen_critical_left_screen_latency_frame_cnt*spf)
-                
+
             if acquired:
                 counter+=1
 
@@ -1838,17 +1852,17 @@ class Tracker:
         print 'Frames before acquisition: ' + str(frames_b4_acq)
         print '\nThis program took ' + str(time.time() - start_time) + " seconds to run."
         print '#' * 45
-        
-        if gen_cowlog:
-            # write last line of cowlog
-            cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'END', '0'))
 
-            # close the cowlog file
-            cowlog_file.close()
-        
+        # write last line of cowlog
+        cowlog_writer.writerow(('{:.2f}'.format((faux_counter*spf)+30), 'END', '0'))
+
+        # close the cowlog file
+        cowlog_file.close()
+
         cv2.destroyAllWindows()
-        
-        if gen_tracker_video:
+
+        # TEMP
+        if GEN_OUTPUT_VID:
             video.release()
 
 if __name__ == '__main__':
@@ -1876,6 +1890,24 @@ if __name__ == '__main__':
     #path = r'D:\new_num\gambusia_18_TBD_female_Wendy_9_1_9_12_75_none_R.mp4'
     #path = r'D:\new_num\gambusia_18_TBD_male_Wheatley_9_1_9_12_75_none_R.mp4'
     #path = r'D:\new_num\gambusia_18_TBD_male_Gary_9_1_9_12_75_none_L.mp4'
+
+    # gals from cougar
+    #path = r'D:\new_num\gambusia_19_288_female_Gertrude_9_1_8_12_67_none_L.mp4'
+    #path = r'D:\new_num\gambusia_23_TBD_female_Gretchen_9_1_7_14_50_none_L.mp4'
+
+    # gals from albatross
+    #path = r'D:\new_num\gambusia_19_323_female_Winona_9_1_8_12_67_none_R.mp4'
+    #path = r'D:\new_num\gambusia_21_325_female_Gabi_9_1_9_12_75_none_L.mp4'
+
+    # light cmp
+    #path = r'D:\num_lighting_cmp\gambusia_26_TBD_female_4cyan4lightbluefilters1_9_1_8_12_67_none_R.mp4'
+    #path = r'D:\num_lighting_cmp\gambusia_26_TBD_female_4cyan4lightbluefilters2_9_1_8_12_67_none_R.mp4'
+    #path = r'D:\num_lighting_cmp\gambusia_1_TBD_female_4cyan4lightblue88_9_1_10_0_0_none_B.mp4'
+    #path = r'D:\num_lighting_cmp\gambusia_1_TBD_female_4cyan4lightblue99_9_1_10_0_0_none_B.mp4'
+    #path = r'D:\num_lighting_cmp\gambusia_1_TBD_female_4cyan4lightblue00_9_1_10_0_0_none_B.mp4'
+    #path = r'D:\num_lighting_cmp\gambusia_1_TBD_female_4cyan4lightblue22_9_1_10_0_0_none_B.mp4'
+    #path = r'D:\num_lighting_cmp\gambusia_1_TBD_female_4cyan4lightblue33_9_1_10_0_0_none_B.mp4'
+    #path = r'D:\num_lighting_cmp\gambusia_1_TBD_female_4cyan4lightblue44_9_1_10_0_0_none_B.mp4'
 
     vid_file = str(path)
     config_file = str(args['config_file'])
