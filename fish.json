@@ -258,11 +258,32 @@
         "sex": "male",
         "species": "nigrensis"
     },
+    "Helina": {
+        "cam_node": "uranus",
+        "fishstandardlength": "TBD",
+        "node": "neptune",
+        "sex": "female",
+        "species": "nigrensis"
+    },
+    "Heloisa": {
+        "cam_node": "earth",
+        "fishstandardlength": "TBD",
+        "node": "mars",
+        "sex": "female",
+        "species": "nigrensis"
+    },
     "Henry": {
         "cam_node": "pluto",
         "fishstandardlength": "TBD",
         "node": "ceres",
         "sex": "male",
+        "species": "nigrensis"
+    },
+    "Hera": {
+        "cam_node": "pluto",
+        "fishstandardlength": "TBD",
+        "node": "ceres",
+        "sex": "female",
         "species": "nigrensis"
     },
     "Horton": {
@@ -371,7 +392,7 @@
         "species": "gambusia"
     },
     "Iva": {
-        "cam_node": "old_gorilla",
+        "cam_node": "gorilla",
         "fishstandardlength": "TBD",
         "node": "hawk",
         "sex": "female",
@@ -406,7 +427,7 @@
         "species": "gambusia"
     },
     "Izzy": {
-        "cam_node": "old_gorilla",
+        "cam_node": "gorilla",
         "fishstandardlength": "TBD",
         "node": "hawk",
         "sex": "female",
@@ -452,6 +473,20 @@
         "fishstandardlength": "TBD",
         "node": "leopard",
         "sex": "male",
+        "species": "nigrensis"
+    },
+    "Leticia": {
+        "cam_node": "jupiter",
+        "fishstandardlength": "TBD",
+        "node": "saturn",
+        "sex": "female",
+        "species": "nigrensis"
+    },
+    "Lupita": {
+        "cam_node": "mercury",
+        "fishstandardlength": "TBD",
+        "node": "venus",
+        "sex": "female",
         "species": "nigrensis"
     },
     "Oahu": {
@@ -770,7 +805,7 @@
         "species": "gambusia"
     },
     "Wyatt": {
-        "cam_node": "old_gorilla",
+        "cam_node": "gorilla",
         "fishstandardlength": "237",
         "node": "hawk",
         "sex": "male",

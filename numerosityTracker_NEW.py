@@ -107,6 +107,7 @@ def find_if_close(cnt1,cnt2):
 
 def merge_contours(frame, thresh):
     contours,hier = cv2.findContours(thresh,cv2.RETR_EXTERNAL,2)
+    #image, contours, hier = cv2.findContours(thresh,cv2.RETR_EXTERNAL,2)
 
     LENGTH = len(contours)
     status = np.zeros((LENGTH,1))
@@ -146,6 +147,7 @@ def find_fish(frame,totalVideoPixels, unified, min_area_pixels, max_area_pixels,
 
     # find all contours in the frame
     contours = cv2.findContours(frame,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+    #image,contours,hier = cv2.findContours(frame,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     #print 'number of contours: ' + str(len(contours[0]))
     if len(contours) > 1 and unified is not None:
         contours = unified
@@ -449,6 +451,10 @@ class Tracker:
         FEED_DURATION = 220-2 # secs
         TOTAL_TIME = 245 # secs
         SCREEN_DELAY = 30
+        DELAY_TRACKING_SECS = 0 # secs to delay starting tracker
+        RULE1_SECS = 30 # once detection starts, seconds fish must be detected before declare video not trackable
+        RULE2_SECS = 30 # if the fish is lost for the final RULE2SECS then declare video not trackable
+        RULE3_SECS = 30 # if at any point if tracking is lost for RULE3_SECS then decare video not trackable
         NUM_FRAMES_FOR_BACKGROUND = 1000
         PRE_SCREEN_EDGE_BUFFER_X = 175 #pixels
         PRE_SCREEN_EDGE_BUFFER_Y = 175 #pixels
@@ -505,6 +511,14 @@ class Tracker:
                     gen_cowlog = True
                 else:
                     gen_cowlog = False
+            if 'DELAY_TRACKING_SECS' in config_json:
+                DELAY_TRACKING_SECS = int(config_json['DELAY_TRACKING_SECS'])
+            if 'RULE1_SECS' in config_json:
+                RULE1_SECS = int(config_json['RULE1_SECS'])
+            if 'RULE2_SECS' in config_json:
+                RULE2_SECS = int(config_json['RULE2_SECS'])
+            if 'RULE3_SECS' in config_json:
+                RULE3_SECS = int(config_json['RULE3_SECS'])
             if 'SCREEN_DELAY_SECS' in config_json:
                 SCREEN_DELAY = int(config_json['SCREEN_DELAY_SECS'])
             if 'TESTING_CRITICAL_DUR_SECS' in config_json:
@@ -737,6 +751,7 @@ class Tracker:
         lost_track_frame_cnt = 0
         times_lost_track = 0
         frames_since_last_track = []
+        not_trackable = False
 
         print '#' * 45
         print 'Trial Parameters: '
@@ -972,440 +987,408 @@ class Tracker:
             if faux_counter == 1 and gen_tracker_video:
                 video = cv2.VideoWriter(os.path.splitext(filename)[0] + '_tracker.avi',cv2.cv.CV_FOURCC(*'MJPG'),25,(vidWidth,vidHeight),True)
 
-
-            # blur and crop frame
-            bm = blur_and_mask(frame, lower_bound, upper_bound, left_bound, right_bound, vidHeight, vidWidth)
-
-            # find difference between frame and background
-            difference = cv2.absdiff(bm, bm_initial)
-            #if counter < (FEED_DELAY*fps) or counter > ((FEED_DELAY+FEED_DURATION)*fps):
-            #   #difference = apply_mask(difference, TANK_UPPER_LEFT_Y+EDGE_BUFFER, TANK_LOWER_LEFT_Y-EDGE_BUFFER, left_target_x, right_target_x, vidHeight, vidWidth)
-            #   difference = apply_special_mask(difference, TANK_UPPER_LEFT_X+EDGE_BUFFER, TANK_UPPER_RIGHT_X-EDGE_BUFFER, TANK_UPPER_LEFT_Y+25, upper_mirror_y, left_target_x, right_target_x, lower_mirror_y, TANK_LOWER_LEFT_Y-25, vidHeight, vidWidth)
-            #elif not tracking:
-
-
-            #if faux_counter < (SCREEN_DELAY*fps):
-            #   difference = apply_mask(difference, TANK_UPPER_LEFT_Y+PRE_SCREEN_EDGE_BUFFER_Y, TANK_LOWER_LEFT_Y-PRE_SCREEN_EDGE_BUFFER_Y, TANK_UPPER_LEFT_X+PRE_SCREEN_EDGE_BUFFER_X, TANK_UPPER_RIGHT_X-PRE_SCREEN_EDGE_BUFFER_X, vidHeight, vidWidth)
-            #elif not tracking:
-            #   difference = apply_mask(difference, TANK_UPPER_LEFT_Y+EDGE_BUFFER_Y, TANK_LOWER_LEFT_Y-EDGE_BUFFER_Y, TANK_UPPER_LEFT_X+EDGE_BUFFER_X, TANK_UPPER_RIGHT_X-EDGE_BUFFER_X, vidHeight, vidWidth)
-            #else:
-            #   difference = apply_mask(difference, new_lower_bound, new_upper_bound, new_left_bound, new_right_bound, vidHeight, vidWidth)
-            difference = apply_test_mask(difference, upper_mirror_x1, upper_mirror_x2, TANK_UPPER_LEFT_Y+20, TANK_LOWER_LEFT_Y-20, TANK_UPPER_LEFT_X+20, TANK_UPPER_RIGHT_X-20, TANK_UPPER_LEFT_Y, TANK_LOWER_LEFT_Y, vidHeight, vidWidth)
-
-            # find the centroid of the largest blob
-            imdiff = cv2.cvtColor(difference, cv2.COLOR_BGR2GRAY)
-            if self.show_images:
-                #cv2.imshow('imdiff',imdiff)
-                cv2.imshow('imdiff', cv2.resize(imdiff, (0,0), fx=0.5, fy=0.5))
-            #ret,thresh = cv2.threshold(imdiff,np.amax(imdiff),255,0)
-            ret,thresh = cv2.threshold(imdiff,DIFF_THRESHOLD,255,0)
-            if self.show_images:
-                #cv2.imshow('thresh',thresh)
-                cv2.imshow('thresh', cv2.resize(thresh, (0,0), fx=0.5, fy=0.5))
-
-            #unified = merge_contours(frame, thresh)
-            unified = None
-            center = find_fish(thresh, vidWidth*vidHeight, unified, FISH_AREA_MIN_PIXELS, FISH_AREA_MAX_PIXELS, FISH_HEIGHT_MIN_PIXELS, FISH_HEIGHT_MAX_PIXELS)
-            #center = None
-            #print 'Center: ' + str(center) + '\n'
-
-            # calc distance between current center and previous center
-            if not first_pass:
-                if center is not None and prev_center is not None:
-                    # distance between points in pixels times cm in a single pixel
-                    #activity_level += (true_distance(prev_center, center))*pixel_cm
-
-                    # this is just accumulating pixels traveled
-                    activity_level += (true_distance(prev_center, center))
-
-            # so we're tracking...
-            if center is not None:
-
-                prev_center = center
-
-                if not acquired:
-
-                    print 'Frames before acquisition: ' + str(frames_b4_acq)
-
-                    acquired = True
-
-                    # Thinking this is no longer issue for testing trials since
-                    # the diff should be pretty clear even on first frame
-                    if frames_b4_acq > 3.0*fps:
-                        #dist_left = true_distance([left_target_center_x, target_center_y], center)
-                        #dist_right = true_distance([right_target_center_x, target_center_y], center)
-                        dist_left = 1
-                        dist_right = 0
-                        if dist_left > dist_right:
-                            #right_target_frame_cnt += frames_b4_acq
-                            right_target_entries = 1 #should this be counted
-                            #print 'Counting first ' + str(frames_b4_acq) + ' frames to the right target zone'
-                            first_target_zone = 'right'
-                            first_target_zone_entered = True
+            if faux_counter > DELAY_TRACKING_SECS*fps:
+                
+                # Check Rule 1, if fish isn't detected in first RULE1_SECS then
+                # declare video not trackable
+                if (not acquired) and (faux_counter-(DELAY_TRACKING_SECS*fps) > (RULE1_SECS*fps)):
+                    print "ERROR> Unable to track fish within first " + str(RULE1_SECS) + "secs"
+                    print "Declaring video as not trackable"
+                    not_trackable = True
+                    break                
+                
+                # Check Rule 3, has track been lost for more than RULE3_SECS
+                if (frames_not_tracking > (RULE3_SECS*fps)):
+                    print "ERROR> Lost fish for more than " + str(RULE3_SECS) + "secs"
+                    print "Declaring video as not trackable"
+                    not_trackable = True
+                    break
+                
+                # blur and crop frame
+                bm = blur_and_mask(frame, lower_bound, upper_bound, left_bound, right_bound, vidHeight, vidWidth)
+    
+                # find difference between frame and background
+                difference = cv2.absdiff(bm, bm_initial)
+                #if counter < (FEED_DELAY*fps) or counter > ((FEED_DELAY+FEED_DURATION)*fps):
+                #   #difference = apply_mask(difference, TANK_UPPER_LEFT_Y+EDGE_BUFFER, TANK_LOWER_LEFT_Y-EDGE_BUFFER, left_target_x, right_target_x, vidHeight, vidWidth)
+                #   difference = apply_special_mask(difference, TANK_UPPER_LEFT_X+EDGE_BUFFER, TANK_UPPER_RIGHT_X-EDGE_BUFFER, TANK_UPPER_LEFT_Y+25, upper_mirror_y, left_target_x, right_target_x, lower_mirror_y, TANK_LOWER_LEFT_Y-25, vidHeight, vidWidth)
+                #elif not tracking:
+    
+    
+                #if faux_counter < (SCREEN_DELAY*fps):
+                #   difference = apply_mask(difference, TANK_UPPER_LEFT_Y+PRE_SCREEN_EDGE_BUFFER_Y, TANK_LOWER_LEFT_Y-PRE_SCREEN_EDGE_BUFFER_Y, TANK_UPPER_LEFT_X+PRE_SCREEN_EDGE_BUFFER_X, TANK_UPPER_RIGHT_X-PRE_SCREEN_EDGE_BUFFER_X, vidHeight, vidWidth)
+                #elif not tracking:
+                #   difference = apply_mask(difference, TANK_UPPER_LEFT_Y+EDGE_BUFFER_Y, TANK_LOWER_LEFT_Y-EDGE_BUFFER_Y, TANK_UPPER_LEFT_X+EDGE_BUFFER_X, TANK_UPPER_RIGHT_X-EDGE_BUFFER_X, vidHeight, vidWidth)
+                #else:
+                #   difference = apply_mask(difference, new_lower_bound, new_upper_bound, new_left_bound, new_right_bound, vidHeight, vidWidth)
+                difference = apply_test_mask(difference, upper_mirror_x1, upper_mirror_x2, TANK_UPPER_LEFT_Y+20, TANK_LOWER_LEFT_Y-20, TANK_UPPER_LEFT_X+20, TANK_UPPER_RIGHT_X-20, TANK_UPPER_LEFT_Y, TANK_LOWER_LEFT_Y, vidHeight, vidWidth)
+    
+                # find the centroid of the largest blob
+                imdiff = cv2.cvtColor(difference, cv2.COLOR_BGR2GRAY)
+                if self.show_images:
+                    #cv2.imshow('imdiff',imdiff)
+                    cv2.imshow('imdiff', cv2.resize(imdiff, (0,0), fx=0.5, fy=0.5))
+                #ret,thresh = cv2.threshold(imdiff,np.amax(imdiff),255,0)
+                ret,thresh = cv2.threshold(imdiff,DIFF_THRESHOLD,255,0)
+                if self.show_images:
+                    #cv2.imshow('thresh',thresh)
+                    cv2.imshow('thresh', cv2.resize(thresh, (0,0), fx=0.5, fy=0.5))
+    
+                #unified = merge_contours(frame, thresh)
+                unified = None
+                center = find_fish(thresh, vidWidth*vidHeight, unified, FISH_AREA_MIN_PIXELS, FISH_AREA_MAX_PIXELS, FISH_HEIGHT_MIN_PIXELS, FISH_HEIGHT_MAX_PIXELS)
+                #center = None
+                #print 'Center: ' + str(center) + '\n'
+    
+                # calc distance between current center and previous center
+                if not first_pass:
+                    if center is not None and prev_center is not None:
+                        # distance between points in pixels times cm in a single pixel
+                        #activity_level += (true_distance(prev_center, center))*pixel_cm
+    
+                        # this is just accumulating pixels traveled
+                        activity_level += (true_distance(prev_center, center))
+    
+                # so we're tracking...
+                if center is not None:
+    
+                    prev_center = center
+    
+                    if not acquired:
+    
+                        print 'Frames before acquisition: ' + str(frames_b4_acq)
+    
+                        acquired = True
+    
+                        # Thinking this is no longer issue for testing trials since
+                        # the diff should be pretty clear even on first frame
+                        if frames_b4_acq > 3.0*fps:
+                            #dist_left = true_distance([left_target_center_x, target_center_y], center)
+                            #dist_right = true_distance([right_target_center_x, target_center_y], center)
+                            dist_left = 1
+                            dist_right = 0
+                            if dist_left > dist_right:
+                                #right_target_frame_cnt += frames_b4_acq
+                                right_target_entries = 1 #should this be counted
+                                #print 'Counting first ' + str(frames_b4_acq) + ' frames to the right target zone'
+                                first_target_zone = 'right'
+                                first_target_zone_entered = True
+                                
+                                if 3.0*fps < SCREEN_DELAY:
+                                    prescreen_right_screen_entries = 1
+                                    prescreen_first_screen_zone = 'right'
+                                    prescreen_first_screen_zone_entered = True
+                                elif 3.0*fps < SCREEN_DELAY+critical_dur_secs:
+                                    postscreen_critical_right_screen_entries = 1
+                                    postscreen_critical_first_screen_zone = 'right'
+                                    postscreen_critical_first_screen_zone_entered = True                              
+                            else:
+                                #left_target_frame_cnt += frames_b4_acq
+                                left_target_entries = 1 #should this be counted
+                                #print 'Counting first ' + str(frames_b4_acq) + ' frames to the left target zone'
+                                first_target_zone = 'left'
+                                first_target_zone_entered = True
+                                
+                                if 3.0*fps < SCREEN_DELAY:
+                                    prescreen_left_screen_entries = 1
+                                    prescreen_first_screen_zone = 'left'
+                                    prescreen_first_screen_zone_entered = True                            
+                                elif 3.0*fps < SCREEN_DELAY+critical_dur_secs:
+                                    postscreen_critical_left_screen_entries = 1
+                                    postscreen_critical_first_screen_zone = 'left'
+                                    postscreen_critical_first_screen_zone_entered = True
+    
+                    if not tracking:
+                        tracking = True
+                        print 'Target acquired... tracking...'
+                        print 'Frames since last tracking: ' + str(frames_not_tracking)
+                        if acquired:
+                            frames_since_last_track.append(frames_not_tracking)
+    
+                    # shrink search window
+                    if center[1] - TRACKING_WINDOW_LEN < TANK_UPPER_LEFT_Y + EDGE_BUFFER_Y:
+                        new_upper_bound = TANK_UPPER_LEFT_Y + EDGE_BUFFER_Y
+                    else:
+                        new_upper_bound = center[1] - TRACKING_WINDOW_LEN
+                    if center[1] + TRACKING_WINDOW_LEN > TANK_LOWER_LEFT_Y - EDGE_BUFFER_Y:
+                        new_lower_bound = TANK_LOWER_LEFT_Y - EDGE_BUFFER_Y
+                    else:
+                        new_lower_bound = center[1] + TRACKING_WINDOW_LEN
+                    if center[0] - TRACKING_WINDOW_LEN < TANK_UPPER_LEFT_X + EDGE_BUFFER_X:
+                        new_left_bound  = TANK_UPPER_LEFT_X + EDGE_BUFFER_X
+                    else:
+                        new_left_bound  = center[0] - TRACKING_WINDOW_LEN
+                    if center[0] + TRACKING_WINDOW_LEN > TANK_UPPER_RIGHT_X - EDGE_BUFFER_X:
+                        new_right_bound = TANK_UPPER_RIGHT_X - EDGE_BUFFER_X
+                    else:
+                        new_right_bound = center[0] + TRACKING_WINDOW_LEN
+                    #print 'new_lower_bound=' + str(new_lower_bound)
+                    #print 'new_upper_bound=' + str(new_upper_bound)
+                    #print 'new_left_bound='  + str(new_left_bound)
+                    #print 'new_right_bound=' + str(new_right_bound)
+    
+                    # if frames_not_tracking > 0 then apply half to prev zone and half to new zone
+                    if in_left_target:
+                        left_target_frame_cnt += (frames_not_tracking/2)
+                    elif in_right_target:
+                        right_target_frame_cnt += (frames_not_tracking/2)
+                    elif in_lower_mirror:
+                        lower_mirror_frame_cnt += (frames_not_tracking/2)
+                    elif in_upper_mirror:
+                        upper_mirror_frame_cnt += (frames_not_tracking/2)
+                    elif in_upper_mirror:
+                        upper_mirror_frame_cnt += (frames_not_tracking/2)
+                    #elif in_ul_corner:
+                    #   ul_corner_frame_cnt += (frames_not_tracking/2)
+                    #elif in_ll_corner:
+                    #   ll_corner_frame_cnt += (frames_not_tracking/2)
+                    #elif in_ur_corner:
+                    #   ur_corner_frame_cnt += (frames_not_tracking/2)
+                    #elif in_lr_corner:
+                    #   lr_corner_frame_cnt += (frames_not_tracking/2)
+                    elif in_ul_thigmo:
+                        ul_thigmo_frame_cnt += (frames_not_tracking/2)
+                    elif in_ll_thigmo:
+                        ll_thigmo_frame_cnt += (frames_not_tracking/2)
+                    elif in_ur_thigmo:
+                        ur_thigmo_frame_cnt += (frames_not_tracking/2)
+                    elif in_lr_thigmo:
+                        lr_thigmo_frame_cnt += (frames_not_tracking/2)
+                    elif in_center:
+                        center_frame_cnt += (frames_not_tracking/2)
+    
+                    frames_not_tracking = frames_not_tracking/2
+                    
+                    #if faux_counter*spf < SCREEN_DELAY:
+                    #    prescreen_frames_not_tracking = prescreen_frames_not_tracking/2
+                    #elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
+                    #    postscreen_critical_frames_not_tracking = postscreen_critical_frames_not_tracking/2
+    
+                    # check if fish is in left target
+                    if center[0] < left_target_x and \
+                    center[1] < left_target_y2 and \
+                    center[1] > left_target_y1:
+    
+                        # check if left target zone entry occurred
+                        if not in_left_target:
+                            left_target_entries += 1
                             
-                            if 3.0*fps < SCREEN_DELAY:
-                                prescreen_right_screen_entries = 1
-                                prescreen_first_screen_zone = 'right'
-                                prescreen_first_screen_zone_entered = True
-                            elif 3.0*fps < SCREEN_DELAY+critical_dur_secs:
-                                postscreen_critical_right_screen_entries = 1
-                                postscreen_critical_first_screen_zone = 'right'
-                                postscreen_critical_first_screen_zone_entered = True                              
-                        else:
-                            #left_target_frame_cnt += frames_b4_acq
-                            left_target_entries = 1 #should this be counted
-                            #print 'Counting first ' + str(frames_b4_acq) + ' frames to the left target zone'
+                            if faux_counter*spf < SCREEN_DELAY:
+                                prescreen_left_screen_entries += 1
+                            elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
+                                postscreen_critical_left_screen_entries += 1
+                                #print '!!!Postscreen Critical Left Target Entry!!!' + str(postscreen_critical_left_screen_entries)
+    
+                        if last_known_zone is not 'left screen' and gen_cowlog:
+                            # Add to cowlog
+                            cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'left screen', '1'))
+    
+                        left_target_frame_cnt += (frames_not_tracking + 1)
+                        in_left_target = True
+                        last_known_zone = 'left screen'
+                        if not first_target_zone_entered:
                             first_target_zone = 'left'
                             first_target_zone_entered = True
                             
-                            if 3.0*fps < SCREEN_DELAY:
-                                prescreen_left_screen_entries = 1
+                        if faux_counter*spf < SCREEN_DELAY:
+                            prescreen_left_screen_frame_cnt += (prescreen_frames_not_tracking + 1)
+                            if not prescreen_first_screen_zone_entered:
                                 prescreen_first_screen_zone = 'left'
-                                prescreen_first_screen_zone_entered = True                            
-                            elif 3.0*fps < SCREEN_DELAY+critical_dur_secs:
-                                postscreen_critical_left_screen_entries = 1
+                                prescreen_first_screen_zone_entered = True
+                        elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
+                            postscreen_critical_left_screen_frame_cnt += (postscreen_critical_frames_not_tracking + 1)
+                            if not postscreen_critical_first_screen_zone_entered:
                                 postscreen_critical_first_screen_zone = 'left'
                                 postscreen_critical_first_screen_zone_entered = True
-
-                if not tracking:
-                    tracking = True
-                    print 'Target acquired... tracking...'
-                    print 'Frames since last tracking: ' + str(frames_not_tracking)
-                    if acquired:
-                        frames_since_last_track.append(frames_not_tracking)
-
-                # shrink search window
-                if center[1] - TRACKING_WINDOW_LEN < TANK_UPPER_LEFT_Y + EDGE_BUFFER_Y:
-                    new_upper_bound = TANK_UPPER_LEFT_Y + EDGE_BUFFER_Y
-                else:
-                    new_upper_bound = center[1] - TRACKING_WINDOW_LEN
-                if center[1] + TRACKING_WINDOW_LEN > TANK_LOWER_LEFT_Y - EDGE_BUFFER_Y:
-                    new_lower_bound = TANK_LOWER_LEFT_Y - EDGE_BUFFER_Y
-                else:
-                    new_lower_bound = center[1] + TRACKING_WINDOW_LEN
-                if center[0] - TRACKING_WINDOW_LEN < TANK_UPPER_LEFT_X + EDGE_BUFFER_X:
-                    new_left_bound  = TANK_UPPER_LEFT_X + EDGE_BUFFER_X
-                else:
-                    new_left_bound  = center[0] - TRACKING_WINDOW_LEN
-                if center[0] + TRACKING_WINDOW_LEN > TANK_UPPER_RIGHT_X - EDGE_BUFFER_X:
-                    new_right_bound = TANK_UPPER_RIGHT_X - EDGE_BUFFER_X
-                else:
-                    new_right_bound = center[0] + TRACKING_WINDOW_LEN
-                #print 'new_lower_bound=' + str(new_lower_bound)
-                #print 'new_upper_bound=' + str(new_upper_bound)
-                #print 'new_left_bound='  + str(new_left_bound)
-                #print 'new_right_bound=' + str(new_right_bound)
-
-                # if frames_not_tracking > 0 then apply half to prev zone and half to new zone
-                if in_left_target:
-                    left_target_frame_cnt += (frames_not_tracking/2)
-                elif in_right_target:
-                    right_target_frame_cnt += (frames_not_tracking/2)
-                elif in_lower_mirror:
-                    lower_mirror_frame_cnt += (frames_not_tracking/2)
-                elif in_upper_mirror:
-                    upper_mirror_frame_cnt += (frames_not_tracking/2)
-                elif in_upper_mirror:
-                    upper_mirror_frame_cnt += (frames_not_tracking/2)
-                #elif in_ul_corner:
-                #   ul_corner_frame_cnt += (frames_not_tracking/2)
-                #elif in_ll_corner:
-                #   ll_corner_frame_cnt += (frames_not_tracking/2)
-                #elif in_ur_corner:
-                #   ur_corner_frame_cnt += (frames_not_tracking/2)
-                #elif in_lr_corner:
-                #   lr_corner_frame_cnt += (frames_not_tracking/2)
-                elif in_ul_thigmo:
-                    ul_thigmo_frame_cnt += (frames_not_tracking/2)
-                elif in_ll_thigmo:
-                    ll_thigmo_frame_cnt += (frames_not_tracking/2)
-                elif in_ur_thigmo:
-                    ur_thigmo_frame_cnt += (frames_not_tracking/2)
-                elif in_lr_thigmo:
-                    lr_thigmo_frame_cnt += (frames_not_tracking/2)
-                elif in_center:
-                    center_frame_cnt += (frames_not_tracking/2)
-
-                frames_not_tracking = frames_not_tracking/2
-                
-                #if faux_counter*spf < SCREEN_DELAY:
-                #    prescreen_frames_not_tracking = prescreen_frames_not_tracking/2
-                #elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
-                #    postscreen_critical_frames_not_tracking = postscreen_critical_frames_not_tracking/2
-
-                # check if fish is in left target
-                if center[0] < left_target_x and \
-                center[1] < left_target_y2 and \
-                center[1] > left_target_y1:
-
-                    # check if left target zone entry occurred
-                    if not in_left_target:
-                        left_target_entries += 1
-                        
-                        if faux_counter*spf < SCREEN_DELAY:
-                            prescreen_left_screen_entries += 1
-                        elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
-                            postscreen_critical_left_screen_entries += 1
-                            #print '!!!Postscreen Critical Left Target Entry!!!' + str(postscreen_critical_left_screen_entries)
-
-                    if last_known_zone is not 'left screen' and gen_cowlog:
-                        # Add to cowlog
-                        cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'left screen', '1'))
-
-                    left_target_frame_cnt += (frames_not_tracking + 1)
-                    in_left_target = True
-                    last_known_zone = 'left screen'
-                    if not first_target_zone_entered:
-                        first_target_zone = 'left'
-                        first_target_zone_entered = True
-                        
-                    if faux_counter*spf < SCREEN_DELAY:
-                        prescreen_left_screen_frame_cnt += (prescreen_frames_not_tracking + 1)
-                        if not prescreen_first_screen_zone_entered:
-                            prescreen_first_screen_zone = 'left'
-                            prescreen_first_screen_zone_entered = True
-                    elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
-                        postscreen_critical_left_screen_frame_cnt += (postscreen_critical_frames_not_tracking + 1)
-                        if not postscreen_critical_first_screen_zone_entered:
-                            postscreen_critical_first_screen_zone = 'left'
-                            postscreen_critical_first_screen_zone_entered = True
-                        
-                else:
-                    in_left_target = False
-
-                # check if fish is in right target
-                if center[0] > right_target_x and \
-                center[1] < right_target_y2 and \
-                center[1] > right_target_y1:
-
-                    # check if right target zone entry occurred
-                    if not in_right_target:
-                        right_target_entries += 1
-                        
-                        if faux_counter*spf < SCREEN_DELAY:
-                            prescreen_right_screen_entries += 1
-                        elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
-                            postscreen_critical_right_screen_entries += 1
-                            #print '!!!Postscreen Critical Right Target Entry!!!' + str(postscreen_critical_right_screen_entries)
-
-                    if last_known_zone is not 'right screen' and gen_cowlog:
-                        # Add to cowlog
-                        cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'right screen', '1'))
-                        
-                    right_target_frame_cnt += (frames_not_tracking + 1)
-                    in_right_target = True
-                    last_known_zone = 'right screen'
-                    if not first_target_zone_entered:
-                        first_target_zone = 'right'
-                        first_target_zone_entered = True
-                        
-                    if faux_counter*spf < SCREEN_DELAY:
-                        prescreen_right_screen_frame_cnt += (prescreen_frames_not_tracking + 1)
-                        if not prescreen_first_screen_zone_entered:
-                            prescreen_first_screen_zone = 'right'
-                            prescreen_first_screen_zone_entered = True
-                    elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
-                        postscreen_critical_right_screen_frame_cnt += (postscreen_critical_frames_not_tracking + 1)
-                        if not postscreen_critical_first_screen_zone_entered:
-                            postscreen_critical_first_screen_zone = 'right'
-                            postscreen_critical_first_screen_zone_entered = True
-                else:
-                    in_right_target = False
-
-                # check left target latency (if still applicable)
-                if left_target_entries == 0:
-                    left_target_latency_frame_cnt += (frames_not_tracking + 1)
-                    
-                if prescreen_left_screen_entries == 0 and \
-                   faux_counter*spf < SCREEN_DELAY:
-                    prescreen_left_screen_latency_frame_cnt += (prescreen_frames_not_tracking + 1)
-                elif postscreen_critical_left_screen_entries == 0 and \
-                     faux_counter*spf < SCREEN_DELAY+critical_dur_secs and \
-                     faux_counter*spf >= SCREEN_DELAY:
-                    postscreen_critical_left_screen_latency_frame_cnt += (postscreen_critical_frames_not_tracking + 1)
-
-                # check right target latency (if still applicable)
-                if right_target_entries == 0:
-                    right_target_latency_frame_cnt += (frames_not_tracking + 1)
-                    
-                if prescreen_right_screen_entries == 0 and \
-                   faux_counter*spf < SCREEN_DELAY:
-                    prescreen_right_screen_latency_frame_cnt += (prescreen_frames_not_tracking + 1)
-                elif postscreen_critical_right_screen_entries == 0 and \
-                     faux_counter*spf < SCREEN_DELAY+critical_dur_secs and \
-                     faux_counter*spf >= SCREEN_DELAY:
-                    postscreen_critical_right_screen_latency_frame_cnt += (postscreen_critical_frames_not_tracking + 1)
-
-                # check if in upper mirror zone
-                if center[0] > upper_mirror_x1 and center[0] < upper_mirror_x2 and center[1] < upper_mirror_y:
-                    upper_mirror_frame_cnt += (frames_not_tracking + 1)
-                        
-                    # check if an entry to upper mirror occurred
-                    if last_known_zone is not 'top mirror' and gen_cowlog:
-                        # Add to cowlog
-                        cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'top mirror', '1'))
-                        
-                    in_upper_mirror = True
-                    last_known_zone = 'top mirror'
-                else:
-                    in_upper_mirror = False
-
-                # check if in lower mirror zone
-                if center[0] > lower_mirror_x1 and center[0] < lower_mirror_x2 and center[1] > lower_mirror_y:
-                    lower_mirror_frame_cnt += (frames_not_tracking + 1)
-                    
-                    # check if an entry to lower mirror occurred
-                    if last_known_zone is not 'bottom mirror' and gen_cowlog:
-                        # Add to cowlog
-                        cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'bottom mirror', '1'))
-
-                    in_lower_mirror = True
-                    last_known_zone = 'bottom mirror'
-                else:
-                    in_lower_mirror = False
-
-                # check if in upper left thigmotaxis zone
-                if center[0] > thigmo_ul_x1 and center[0] < thigmo_ul_x2 and center[1] < thigmo_upper_y:
-                    ul_thigmo_frame_cnt += (frames_not_tracking + 1)
-                    
-                    # check if an entry to upper left thigmo occurred
-                    if last_known_zone is not 'top left thigmo' and gen_cowlog:
-                        # Add to cowlog
-                        cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'top left thigmo', '1'))
-                        
-                    in_ul_thigmo = True
-                    last_known_zone = 'top left thigmo'
-                else:
-                    in_ul_thigmo = False
-
-                # check if in upper right thigmotaxis zone
-                if center[0] > thigmo_ur_x1 and center[0] < thigmo_ur_x2 and center[1] < thigmo_upper_y:
-                    ur_thigmo_frame_cnt += (frames_not_tracking + 1)
-                    
-                    # check if an entry to upper right thigmo occurred
-                    if last_known_zone is not 'top right thigmo' and gen_cowlog:
-                        # Add to cowlog
-                        cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'top right thigmo', '1'))
-
-                    in_ur_thigmo = True
-                    last_known_zone = 'top right thigmo'
-                else:
-                    in_ur_thigmo = False
-
-                # check if in lower left thigmotaxis zone
-                if center[0] > thigmo_ll_x1 and center[0] < thigmo_ll_x2 and center[1] > thigmo_lower_y:
-                    ll_thigmo_frame_cnt += (frames_not_tracking + 1)
-                    
-                    # check if an entry to lower left thigmo occurred
-                    if last_known_zone is not 'bottom left thigmo' and gen_cowlog:
-                        # Add to cowlog
-                        cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'bottom left thigmo', '1'))
-
-                    in_ll_thigmo = True
-                    last_known_zone = 'bottom left thigmo'
-                else:
-                    in_ll_thigmo = False
-
-                # check if in lower right thigmotaxis zone
-                if center[0] > thigmo_lr_x1 and center[0] < thigmo_lr_x2 and center[1] > thigmo_lower_y:
-                    lr_thigmo_frame_cnt += (frames_not_tracking + 1)
-                    
-                    # check if an entry to lower right thigmo occurred
-                    if last_known_zone is not 'bottom right thigmo' and gen_cowlog:
-                        # Add to cowlog
-                        cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'bottom right thigmo', '1'))
-
-                    in_lr_thigmo = True
-                    last_known_zone = 'bottom right thigmo'
-                else:
-                    in_lr_thigmo = False
-
-                # check if fish is in corners (may use for thigmotaxis score)
-#               if center[0] < thigmo_ul_x1 and center[1] < thigmo_upper_y:
-#                   ul_corner_frame_cnt += (frames_not_tracking + 1)
-#                   in_ul_corner = True
-#               else:
-#                   in_ul_corner = False
-#
-#               if center[0] < thigmo_ll_x1 and center[1] > thigmo_lower_y:
-#                   ll_corner_frame_cnt += (frames_not_tracking + 1)
-#                   in_ll_corner = True
-#               else:
-#                   in_ll_corner = False
-#
-#               if center[0] > thigmo_ur_x2 and center[1] < thigmo_upper_y:
-#                   ur_corner_frame_cnt += (frames_not_tracking + 1)
-#                   in_ur_corner = True
-#               else:
-#                   in_ur_corner = False
-#
-#               if center[0] > thigmo_lr_x2 and center[1] > thigmo_lower_y:
-#                   lr_corner_frame_cnt += (frames_not_tracking + 1)
-#                   in_lr_corner = True
-#               else:
-#                   in_lr_corner = False
-
-                if not in_left_target and not in_right_target and not in_ll_corner and not in_lr_corner and not in_ul_corner and not in_ur_corner and not in_ll_thigmo and not in_lr_thigmo and not in_ul_thigmo and not in_ur_thigmo and not in_lower_mirror and not in_upper_mirror:
-
-                    # check if an entry to center occurred
-                    if last_known_zone is not 'center' and gen_cowlog:
-                        # Add to cowlog
-                        cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'center', '1'))
-
-                    in_center = True
-                    last_known_zone = 'center'
-                    center_frame_cnt += (frames_not_tracking + 1)
-
-                # check for freezing
-                if freeze_start is None:
-                    freeze_start = center
-                    if in_ll_thigmo or in_lr_thigmo or in_ul_thigmo or in_ur_thigmo:
-                        freeze_zone = 'thigmo'
-                    elif in_lower_mirror or in_upper_mirror:
-                        freeze_zone = 'mirror'
-                    elif in_left_target and (trained_high and leftside_high):
-                        freeze_zone = 'reinforced.target'
-                    elif in_left_target and (trained_low and rightside_high):
-                        freeze_zone = 'non.reinforced.target'
-                    elif in_right_target and (trained_high and rightside_high):
-                        freeze_zone = 'reinforced.target'
-                    elif in_right_target and (trained_low and leftside_high):
-                        freeze_zone = 'non.reinforced.target'
+                            
                     else:
-                        freeze_zone = 'center'
-                else:
-                    if true_distance(freeze_start, center) < FREEZE_WINDOW_LEN:
-                        freeze_frame_cnt += 1
-
-                        # if potential freeze frames is not 0 then fish wasn't being tracked
-                        # but appears to have remained within freeze circle so add those
-                        # frames to the freeze frame counter
-                        if potential_freeze_frames > 0:
-                            freeze_frame_cnt += potential_freeze_frames
-                            potential_freeze_frames = 0
+                        in_left_target = False
+    
+                    # check if fish is in right target
+                    if center[0] > right_target_x and \
+                    center[1] < right_target_y2 and \
+                    center[1] > right_target_y1:
+    
+                        # check if right target zone entry occurred
+                        if not in_right_target:
+                            right_target_entries += 1
+                            
+                            if faux_counter*spf < SCREEN_DELAY:
+                                prescreen_right_screen_entries += 1
+                            elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
+                                postscreen_critical_right_screen_entries += 1
+                                #print '!!!Postscreen Critical Right Target Entry!!!' + str(postscreen_critical_right_screen_entries)
+    
+                        if last_known_zone is not 'right screen' and gen_cowlog:
+                            # Add to cowlog
+                            cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'right screen', '1'))
+                            
+                        right_target_frame_cnt += (frames_not_tracking + 1)
+                        in_right_target = True
+                        last_known_zone = 'right screen'
+                        if not first_target_zone_entered:
+                            first_target_zone = 'right'
+                            first_target_zone_entered = True
+                            
+                        if faux_counter*spf < SCREEN_DELAY:
+                            prescreen_right_screen_frame_cnt += (prescreen_frames_not_tracking + 1)
+                            if not prescreen_first_screen_zone_entered:
+                                prescreen_first_screen_zone = 'right'
+                                prescreen_first_screen_zone_entered = True
+                        elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
+                            postscreen_critical_right_screen_frame_cnt += (postscreen_critical_frames_not_tracking + 1)
+                            if not postscreen_critical_first_screen_zone_entered:
+                                postscreen_critical_first_screen_zone = 'right'
+                                postscreen_critical_first_screen_zone_entered = True
                     else:
-                        if freeze_frame_cnt > FREEZE_TIME_MIN_SECS*fps:
-                            # log the freeze event
-                            freeze_event_cnt += 1
-                            print 'Freeze Event #' + str(freeze_event_cnt) + ': ' + str(freeze_frame_cnt*spf) + ' secs (' + freeze_zone + ')'
-                            # Check if csv file exists
-                            if not os.path.isfile(freeze_log):
-                                # Open csv file in write mode
-                                with open(freeze_log, 'w') as f:
-                                    writer = csv.writer(f)
-                                    # write the header
-                                    writer.writerow(('Event','Fish.ID', 'Round', 'Day', \
-                                                    'Session', 'Stimulus', 'Other.Stimulus', \
-                                                    'Proportion', 'Fed.Side','Correct.Side', \
-                                                    'Length.Secs','Zone'))
-                            # Open csv file in append mode
-                            with open(freeze_log, 'a') as f:
-                                writer = csv.writer(f)
-                                # write the data (limit all decimals to 2 digits)
-                                writer.writerow((freeze_event_cnt, fishid, round_num, day, session, stimulus,
-                                                 that_stimulus, proportion, fedside, correctside, \
-                                                 '{:.2f}'.format(freeze_frame_cnt*spf), freeze_zone))
-                        freeze_frame_cnt = 0
+                        in_right_target = False
+    
+                    # check left target latency (if still applicable)
+                    if left_target_entries == 0:
+                        left_target_latency_frame_cnt += (frames_not_tracking + 1)
+                        
+                    if prescreen_left_screen_entries == 0 and \
+                       faux_counter*spf < SCREEN_DELAY:
+                        prescreen_left_screen_latency_frame_cnt += (prescreen_frames_not_tracking + 1)
+                    elif postscreen_critical_left_screen_entries == 0 and \
+                         faux_counter*spf < SCREEN_DELAY+critical_dur_secs and \
+                         faux_counter*spf >= SCREEN_DELAY:
+                        postscreen_critical_left_screen_latency_frame_cnt += (postscreen_critical_frames_not_tracking + 1)
+    
+                    # check right target latency (if still applicable)
+                    if right_target_entries == 0:
+                        right_target_latency_frame_cnt += (frames_not_tracking + 1)
+                        
+                    if prescreen_right_screen_entries == 0 and \
+                       faux_counter*spf < SCREEN_DELAY:
+                        prescreen_right_screen_latency_frame_cnt += (prescreen_frames_not_tracking + 1)
+                    elif postscreen_critical_right_screen_entries == 0 and \
+                         faux_counter*spf < SCREEN_DELAY+critical_dur_secs and \
+                         faux_counter*spf >= SCREEN_DELAY:
+                        postscreen_critical_right_screen_latency_frame_cnt += (postscreen_critical_frames_not_tracking + 1)
+    
+                    # check if in upper mirror zone
+                    if center[0] > upper_mirror_x1 and center[0] < upper_mirror_x2 and center[1] < upper_mirror_y:
+                        upper_mirror_frame_cnt += (frames_not_tracking + 1)
+                            
+                        # check if an entry to upper mirror occurred
+                        if last_known_zone is not 'top mirror' and gen_cowlog:
+                            # Add to cowlog
+                            cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'top mirror', '1'))
+                            
+                        in_upper_mirror = True
+                        last_known_zone = 'top mirror'
+                    else:
+                        in_upper_mirror = False
+    
+                    # check if in lower mirror zone
+                    if center[0] > lower_mirror_x1 and center[0] < lower_mirror_x2 and center[1] > lower_mirror_y:
+                        lower_mirror_frame_cnt += (frames_not_tracking + 1)
+                        
+                        # check if an entry to lower mirror occurred
+                        if last_known_zone is not 'bottom mirror' and gen_cowlog:
+                            # Add to cowlog
+                            cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'bottom mirror', '1'))
+    
+                        in_lower_mirror = True
+                        last_known_zone = 'bottom mirror'
+                    else:
+                        in_lower_mirror = False
+    
+                    # check if in upper left thigmotaxis zone
+                    if center[0] > thigmo_ul_x1 and center[0] < thigmo_ul_x2 and center[1] < thigmo_upper_y:
+                        ul_thigmo_frame_cnt += (frames_not_tracking + 1)
+                        
+                        # check if an entry to upper left thigmo occurred
+                        if last_known_zone is not 'top left thigmo' and gen_cowlog:
+                            # Add to cowlog
+                            cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'top left thigmo', '1'))
+                            
+                        in_ul_thigmo = True
+                        last_known_zone = 'top left thigmo'
+                    else:
+                        in_ul_thigmo = False
+    
+                    # check if in upper right thigmotaxis zone
+                    if center[0] > thigmo_ur_x1 and center[0] < thigmo_ur_x2 and center[1] < thigmo_upper_y:
+                        ur_thigmo_frame_cnt += (frames_not_tracking + 1)
+                        
+                        # check if an entry to upper right thigmo occurred
+                        if last_known_zone is not 'top right thigmo' and gen_cowlog:
+                            # Add to cowlog
+                            cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'top right thigmo', '1'))
+    
+                        in_ur_thigmo = True
+                        last_known_zone = 'top right thigmo'
+                    else:
+                        in_ur_thigmo = False
+    
+                    # check if in lower left thigmotaxis zone
+                    if center[0] > thigmo_ll_x1 and center[0] < thigmo_ll_x2 and center[1] > thigmo_lower_y:
+                        ll_thigmo_frame_cnt += (frames_not_tracking + 1)
+                        
+                        # check if an entry to lower left thigmo occurred
+                        if last_known_zone is not 'bottom left thigmo' and gen_cowlog:
+                            # Add to cowlog
+                            cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'bottom left thigmo', '1'))
+    
+                        in_ll_thigmo = True
+                        last_known_zone = 'bottom left thigmo'
+                    else:
+                        in_ll_thigmo = False
+    
+                    # check if in lower right thigmotaxis zone
+                    if center[0] > thigmo_lr_x1 and center[0] < thigmo_lr_x2 and center[1] > thigmo_lower_y:
+                        lr_thigmo_frame_cnt += (frames_not_tracking + 1)
+                        
+                        # check if an entry to lower right thigmo occurred
+                        if last_known_zone is not 'bottom right thigmo' and gen_cowlog:
+                            # Add to cowlog
+                            cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'bottom right thigmo', '1'))
+    
+                        in_lr_thigmo = True
+                        last_known_zone = 'bottom right thigmo'
+                    else:
+                        in_lr_thigmo = False
+    
+                    # check if fish is in corners (may use for thigmotaxis score)
+    #               if center[0] < thigmo_ul_x1 and center[1] < thigmo_upper_y:
+    #                   ul_corner_frame_cnt += (frames_not_tracking + 1)
+    #                   in_ul_corner = True
+    #               else:
+    #                   in_ul_corner = False
+    #
+    #               if center[0] < thigmo_ll_x1 and center[1] > thigmo_lower_y:
+    #                   ll_corner_frame_cnt += (frames_not_tracking + 1)
+    #                   in_ll_corner = True
+    #               else:
+    #                   in_ll_corner = False
+    #
+    #               if center[0] > thigmo_ur_x2 and center[1] < thigmo_upper_y:
+    #                   ur_corner_frame_cnt += (frames_not_tracking + 1)
+    #                   in_ur_corner = True
+    #               else:
+    #                   in_ur_corner = False
+    #
+    #               if center[0] > thigmo_lr_x2 and center[1] > thigmo_lower_y:
+    #                   lr_corner_frame_cnt += (frames_not_tracking + 1)
+    #                   in_lr_corner = True
+    #               else:
+    #                   in_lr_corner = False
+    
+                    if not in_left_target and not in_right_target and not in_ll_corner and not in_lr_corner and not in_ul_corner and not in_ur_corner and not in_ll_thigmo and not in_lr_thigmo and not in_ul_thigmo and not in_ur_thigmo and not in_lower_mirror and not in_upper_mirror:
+    
+                        # check if an entry to center occurred
+                        if last_known_zone is not 'center' and gen_cowlog:
+                            # Add to cowlog
+                            cowlog_writer.writerow(('{:.2f}'.format(faux_counter*spf), 'center', '1'))
+    
+                        in_center = True
+                        last_known_zone = 'center'
+                        center_frame_cnt += (frames_not_tracking + 1)
+    
+                    # check for freezing
+                    if freeze_start is None:
                         freeze_start = center
                         if in_ll_thigmo or in_lr_thigmo or in_ul_thigmo or in_ur_thigmo:
                             freeze_zone = 'thigmo'
@@ -1421,55 +1404,107 @@ class Tracker:
                             freeze_zone = 'non.reinforced.target'
                         else:
                             freeze_zone = 'center'
-
-                # draw red circle on largest
-                cv2.circle(frame,center,4,[0,0,255],-1)
-
-                frames_not_tracking = 0
-                postscreen_critical_frames_not_tracking = 0
-                prescreen_frames_not_tracking = 0
-
-            else:
-                if frames_not_tracking > SECS_B4_LOST*fps:
-                    # reset search window (last track)
-                    if tracking:
-                        print 'Lost track! Back to acquisition...'
-                        times_lost_track += 1
-
-                        # draw red circle on prev
-                        if prev_center is not None:
-                            cv2.circle(frame,prev_center,4,[0,0,255],-1)
-
-                    new_upper_bound, new_left_bound, new_right_bound, new_lower_bound = CROP_Y2, CROP_X1, CROP_X2, CROP_Y1
-
-                    lost_track_frame_cnt += 1
-
-                    tracking = False
-
-                frames_not_tracking += 1                    
-                
-                if faux_counter*spf < SCREEN_DELAY:
-                    prescreen_frames_not_tracking += 1
-                elif faux_counter*spf == SCREEN_DELAY and in_left_target:
-                    prescreen_left_screen_frame_cnt += prescreen_frames_not_tracking
-                    prescreen_frames_not_tracking = 0
-                elif faux_counter*spf == SCREEN_DELAY and in_right_target:
-                    prescreen_right_screen_frame_cnt += prescreen_frames_not_tracking
-                    prescreen_frames_not_tracking = 0
-                elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
-                    postscreen_critical_frames_not_tracking += 1
-                elif faux_counter*spf == SCREEN_DELAY+critical_dur_secs and in_left_target:
-                    postscreen_critical_left_screen_frame_cnt += postscreen_critical_frames_not_tracking
+                    else:
+                        if true_distance(freeze_start, center) < FREEZE_WINDOW_LEN:
+                            freeze_frame_cnt += 1
+    
+                            # if potential freeze frames is not 0 then fish wasn't being tracked
+                            # but appears to have remained within freeze circle so add those
+                            # frames to the freeze frame counter
+                            if potential_freeze_frames > 0:
+                                freeze_frame_cnt += potential_freeze_frames
+                                potential_freeze_frames = 0
+                        else:
+                            if freeze_frame_cnt > FREEZE_TIME_MIN_SECS*fps:
+                                # log the freeze event
+                                freeze_event_cnt += 1
+                                print 'Freeze Event #' + str(freeze_event_cnt) + ': ' + str(freeze_frame_cnt*spf) + ' secs (' + freeze_zone + ')'
+                                # Check if csv file exists
+                                if not os.path.isfile(freeze_log):
+                                    # Open csv file in write mode
+                                    with open(freeze_log, 'w') as f:
+                                        writer = csv.writer(f)
+                                        # write the header
+                                        writer.writerow(('Event','Fish.ID', 'Round', 'Day', \
+                                                        'Session', 'Stimulus', 'Other.Stimulus', \
+                                                        'Proportion', 'Fed.Side','Correct.Side', \
+                                                        'Length.Secs','Zone'))
+                                # Open csv file in append mode
+                                with open(freeze_log, 'a') as f:
+                                    writer = csv.writer(f)
+                                    # write the data (limit all decimals to 2 digits)
+                                    writer.writerow((freeze_event_cnt, fishid, round_num, day, session, stimulus,
+                                                     that_stimulus, proportion, fedside, correctside, \
+                                                     '{:.2f}'.format(freeze_frame_cnt*spf), freeze_zone))
+                            freeze_frame_cnt = 0
+                            freeze_start = center
+                            if in_ll_thigmo or in_lr_thigmo or in_ul_thigmo or in_ur_thigmo:
+                                freeze_zone = 'thigmo'
+                            elif in_lower_mirror or in_upper_mirror:
+                                freeze_zone = 'mirror'
+                            elif in_left_target and (trained_high and leftside_high):
+                                freeze_zone = 'reinforced.target'
+                            elif in_left_target and (trained_low and rightside_high):
+                                freeze_zone = 'non.reinforced.target'
+                            elif in_right_target and (trained_high and rightside_high):
+                                freeze_zone = 'reinforced.target'
+                            elif in_right_target and (trained_low and leftside_high):
+                                freeze_zone = 'non.reinforced.target'
+                            else:
+                                freeze_zone = 'center'
+    
+                    # draw red circle on largest
+                    cv2.circle(frame,center,4,[0,0,255],-1)
+    
+                    frames_not_tracking = 0
                     postscreen_critical_frames_not_tracking = 0
-                elif faux_counter*spf == SCREEN_DELAY+critical_dur_secs and in_right_target:
-                    postscreen_critical_right_screen_frame_cnt += postscreen_critical_frames_not_tracking
-                    postscreen_critical_frames_not_tracking = 0
+                    prescreen_frames_not_tracking = 0
+    
+                else:
+                    if frames_not_tracking > SECS_B4_LOST*fps:
+                        # reset search window (last track)
+                        if tracking:
+                            print 'Lost track! Back to acquisition...'
+                            times_lost_track += 1
+    
+                            # draw red circle on prev
+                            if prev_center is not None:
+                                cv2.circle(frame,prev_center,4,[0,0,255],-1)
+    
+                        new_upper_bound, new_left_bound, new_right_bound, new_lower_bound = CROP_Y2, CROP_X1, CROP_X2, CROP_Y1
+    
+                        lost_track_frame_cnt += 1
+    
+                        tracking = False
+    
+                    frames_not_tracking += 1                    
                     
-                if not acquired:
-                    frames_b4_acq += 1
-
-                if acquired:
-                    potential_freeze_frames += 1
+                    if faux_counter*spf < SCREEN_DELAY:
+                        prescreen_frames_not_tracking += 1
+                    elif faux_counter*spf == SCREEN_DELAY and in_left_target:
+                        prescreen_left_screen_frame_cnt += prescreen_frames_not_tracking
+                        prescreen_frames_not_tracking = 0
+                    elif faux_counter*spf == SCREEN_DELAY and in_right_target:
+                        prescreen_right_screen_frame_cnt += prescreen_frames_not_tracking
+                        prescreen_frames_not_tracking = 0
+                    elif faux_counter*spf < SCREEN_DELAY+critical_dur_secs:
+                        postscreen_critical_frames_not_tracking += 1
+                    elif faux_counter*spf == SCREEN_DELAY+critical_dur_secs and in_left_target:
+                        postscreen_critical_left_screen_frame_cnt += postscreen_critical_frames_not_tracking
+                        postscreen_critical_frames_not_tracking = 0
+                    elif faux_counter*spf == SCREEN_DELAY+critical_dur_secs and in_right_target:
+                        postscreen_critical_right_screen_frame_cnt += postscreen_critical_frames_not_tracking
+                        postscreen_critical_frames_not_tracking = 0
+                        
+                    if not acquired:
+                        frames_b4_acq += 1
+    
+                    if acquired:
+                        potential_freeze_frames += 1
+                        
+            else:
+                if not faux_counter % fps:
+                    print 'Not tracking yet...'
 
             # draw white box around search/track window
             if faux_counter < (SCREEN_DELAY*fps):
@@ -1598,6 +1633,12 @@ class Tracker:
 
             if first_pass:
                 first_pass = False
+                
+        # Check Rule 2, if fish was lost last RULE2_SECS, then declare as not trackable
+        if (not tracking) and (frames_not_tracking >= (RULE2_SECS*fps)):
+            print "ERROR> Fish was not tracked for final " + str(RULE2_SECS) + "secs"
+            print "Declaring video as not trackable"
+            not_trackable = True            
 
         print '#' * 45
         print 'Trial Metrics: '
@@ -1761,41 +1802,46 @@ class Tracker:
         with open(csv_filename, 'a') as f:
             writer = csv.writer(f)
 
-            # write the data (limit all decimals to 2 digits)
-            writer.writerow((fishid, round_num, day, session, stimulus, that_stimulus, \
-                             proportion, fedside, correctside, trial_type, \
-                             reinforced_latency, non_reinforced_latency, \
-                             '{:.2f}'.format(time_in_reinforced_target), '{:.2f}'.format(time_in_non_reinforced_target), \
-                             num_entries_reinforced, num_entries_non_reinforced, \
-                             '{:.2f}'.format(prop_time_reinforced), '{:.2f}'.format(prop_time_non_reinforced), \
-                             '{:.2f}'.format(time_in_mirror), '{:.2f}'.format(prop_time_mirror), \
-                             '{:.2f}'.format(thigmotaxis_score), '{:.2f}'.format(prop_time_thigmo), \
-                             '{:.2f}'.format(prop_time_center), '{:.2f}'.format(activity_level), \
-                             '{:.2f}'.format(time_in_corners), '{:.2f}'.format(prop_corners), \
-                             first_target_zone, \
-                             '{:.2f}'.format((left_target_frame_cnt-ll_corner_frame_cnt-ul_corner_frame_cnt)*spf), \
-                             '{:.2f}'.format((right_target_frame_cnt-lr_corner_frame_cnt-ur_corner_frame_cnt)*spf), \
-                             '{:.2f}'.format((ul_thigmo_frame_cnt+ul_corner_frame_cnt)*spf), \
-                             '{:.2f}'.format((ll_thigmo_frame_cnt+ll_corner_frame_cnt)*spf), \
-                             '{:.2f}'.format((ur_thigmo_frame_cnt+ur_corner_frame_cnt)*spf), \
-                             '{:.2f}'.format((lr_thigmo_frame_cnt+lr_corner_frame_cnt)*spf), \
-                             '{:.2f}'.format(center_frame_cnt*spf), \
-                             '{:.2f}'.format(upper_mirror_frame_cnt*spf), \
-                             '{:.2f}'.format(lower_mirror_frame_cnt*spf), \
-                             '{:.2f}'.format((left_target_frame_cnt+right_target_frame_cnt+ul_thigmo_frame_cnt+ll_thigmo_frame_cnt+ur_thigmo_frame_cnt+lr_thigmo_frame_cnt+center_frame_cnt+lower_mirror_frame_cnt+upper_mirror_frame_cnt)*spf), \
-                             prescreen_first_screen_zone, \
-                             prescreen_left_screen_latency_secs, \
-                             prescreen_right_screen_latency_secs, \
-                             '{:.2f}'.format(prescreen_left_screen_frame_cnt*spf), \
-                             '{:.2f}'.format(prescreen_right_screen_frame_cnt*spf), \
-                             prescreen_left_screen_entries, prescreen_right_screen_entries, \
-                             postscreen_critical_first_screen_zone, \
-                             postscreen_critical_left_screen_latency_secs, \
-                             postscreen_critical_right_screen_latency_secs, \
-                             '{:.2f}'.format(postscreen_critical_left_screen_frame_cnt*spf), \
-                             '{:.2f}'.format(postscreen_critical_right_screen_frame_cnt*spf), \
-                             postscreen_critical_left_screen_entries, postscreen_critical_right_screen_entries, \
-                             end_of_prescreen_zone, start_of_postscreen_zone))
+            if not_trackable:
+                # notify user that video was not trackable
+                writer.writerow((fishid, round_num, day, session, stimulus, that_stimulus, \
+                                 proportion, fedside, correctside, trial_type, "Not Trackable"))                
+            else:
+                # write the data (limit all decimals to 2 digits)
+                writer.writerow((fishid, round_num, day, session, stimulus, that_stimulus, \
+                                 proportion, fedside, correctside, trial_type, \
+                                 reinforced_latency, non_reinforced_latency, \
+                                 '{:.2f}'.format(time_in_reinforced_target), '{:.2f}'.format(time_in_non_reinforced_target), \
+                                 num_entries_reinforced, num_entries_non_reinforced, \
+                                 '{:.2f}'.format(prop_time_reinforced), '{:.2f}'.format(prop_time_non_reinforced), \
+                                 '{:.2f}'.format(time_in_mirror), '{:.2f}'.format(prop_time_mirror), \
+                                 '{:.2f}'.format(thigmotaxis_score), '{:.2f}'.format(prop_time_thigmo), \
+                                 '{:.2f}'.format(prop_time_center), '{:.2f}'.format(activity_level), \
+                                 '{:.2f}'.format(time_in_corners), '{:.2f}'.format(prop_corners), \
+                                 first_target_zone, \
+                                 '{:.2f}'.format((left_target_frame_cnt-ll_corner_frame_cnt-ul_corner_frame_cnt)*spf), \
+                                 '{:.2f}'.format((right_target_frame_cnt-lr_corner_frame_cnt-ur_corner_frame_cnt)*spf), \
+                                 '{:.2f}'.format((ul_thigmo_frame_cnt+ul_corner_frame_cnt)*spf), \
+                                 '{:.2f}'.format((ll_thigmo_frame_cnt+ll_corner_frame_cnt)*spf), \
+                                 '{:.2f}'.format((ur_thigmo_frame_cnt+ur_corner_frame_cnt)*spf), \
+                                 '{:.2f}'.format((lr_thigmo_frame_cnt+lr_corner_frame_cnt)*spf), \
+                                 '{:.2f}'.format(center_frame_cnt*spf), \
+                                 '{:.2f}'.format(upper_mirror_frame_cnt*spf), \
+                                 '{:.2f}'.format(lower_mirror_frame_cnt*spf), \
+                                 '{:.2f}'.format((left_target_frame_cnt+right_target_frame_cnt+ul_thigmo_frame_cnt+ll_thigmo_frame_cnt+ur_thigmo_frame_cnt+lr_thigmo_frame_cnt+center_frame_cnt+lower_mirror_frame_cnt+upper_mirror_frame_cnt)*spf), \
+                                 prescreen_first_screen_zone, \
+                                 prescreen_left_screen_latency_secs, \
+                                 prescreen_right_screen_latency_secs, \
+                                 '{:.2f}'.format(prescreen_left_screen_frame_cnt*spf), \
+                                 '{:.2f}'.format(prescreen_right_screen_frame_cnt*spf), \
+                                 prescreen_left_screen_entries, prescreen_right_screen_entries, \
+                                 postscreen_critical_first_screen_zone, \
+                                 postscreen_critical_left_screen_latency_secs, \
+                                 postscreen_critical_right_screen_latency_secs, \
+                                 '{:.2f}'.format(postscreen_critical_left_screen_frame_cnt*spf), \
+                                 '{:.2f}'.format(postscreen_critical_right_screen_frame_cnt*spf), \
+                                 postscreen_critical_left_screen_entries, postscreen_critical_right_screen_entries, \
+                                 end_of_prescreen_zone, start_of_postscreen_zone))
         print 'Done with ' + csv_filename + '!'
         print '#' * 45
 
@@ -1866,7 +1912,7 @@ if __name__ == '__main__':
 
     #path = r'D:\num\gambusia_17_201_male_winston_9_1_7_14_50_none_R.mp4'
     #path = r'D:\num\gambusia_17_376_female_glinda_9_1_7_14_50_none_L.mp4'
-    #path = r'D:\new_num\gambusia_17_355_female_winnie_9_1_9_12_75_none_R.mp4'
+    #path = r'E:\new_num\gambusia_17_355_female_winnie_9_1_9_12_75_none_R.mp4'
     #path = r'D:\new_num\gambusia_18_TBD_female_Gail_9_1_9_12_75_none_L.mp4'
     #path = r'D:\new_num\gambusia_17_373_female_grace_9_1_9_12_75_none_L.mp4'
     #path = r'D:\new_num\gambusia_18_TBD_female_Willow_9_1_9_12_75_none_R.mp4'
